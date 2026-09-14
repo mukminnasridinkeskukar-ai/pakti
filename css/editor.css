@@ -183,8 +183,8 @@
 .editor-body {
   flex: 1;
   overflow: auto;
-  background: #475569;
-  padding: 20px;
+  background: #525659;
+  padding: 24px 16px;
   display: flex;
   justify-content: center;
   align-items: flex-start;
@@ -193,9 +193,10 @@
 /* Container untuk halaman A4 */
 .editor-page-container {
   background: #fff;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
   margin: 0 auto;
   transition: all 0.3s ease;
+  min-height: 297mm;
 }
 
 /* Halaman A4 (default portrait) */
@@ -212,6 +213,11 @@
 /* Editor area di dalam halaman A4 */
 .editor-page-container .tox-tinymce {
   border: none !important;
+  min-height: 297mm;
+}
+
+.editor-page-container.a4-landscape .tox-tinymce {
+  min-height: 210mm;
 }
 
 .editor-page-container .tox-edit-area {
@@ -222,13 +228,11 @@
 .editor-page-container .tox-edit-area__iframe {
   background: #fff !important;
   width: 100% !important;
+  height: 100% !important;
 }
 
-/* Margin halaman A4 - diatur via JS */
-.editor-page-container.a4-portrait.has-margins .tox-edit-area__iframe {
-  padding: 15mm 18mm !important;
-  box-sizing: border-box !important;
-}
+/* Margin halaman A4 - diatur via content_style TinyMCE */
+/* Padding diterapkan via body padding di content_style */
 
 /* ============================================
    FOOTER - Status bar bawah

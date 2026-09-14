@@ -246,8 +246,12 @@ async function initTinyMCEEditor() {
   // Inisialisasi TinyMCE
   tinymce.init({
     selector: '#tinyMCEEditor',
-    language: 'id_ID',
-    language_url: 'https://cdn.jsdelivr.net/npm/tinymce-i18n@24.1.5/langs/id_ID.js',
+    // Hilangkan warning license - pakai GPL license (open source)
+    license_key: 'gpl',
+
+    // Bahasa default (TinyMCE 7 community edition hanya English)
+    // Jangan set language & language_url supaya tidak error load
+
     height: '100%',
     width: '100%',
     autoresize: false,
@@ -255,34 +259,36 @@ async function initTinyMCEEditor() {
     branding: false,
     promotion: false,
 
-    // Toolbar & menu - mirip Microsoft Word
+    // Toolbar & menu - mirip Microsoft Word (hanya plugin yang tersedia)
     menubar: 'file edit view insert format table tools',
     menu: {
       file: { title: 'File', items: 'newdocument restoredraft | preview | print' },
       edit: { title: 'Edit', items: 'undo redo | cut copy paste pastetext | selectall searchreplace' },
       view: { title: 'View', items: 'code | visualaid visualchars visualblocks | preview' },
-      insert: { title: 'Insert', items: 'image link media template codesample inserttable | charmap emoticons hr | pagebreak | anchor' },
+      insert: { title: 'Insert', items: 'image link media | charmap | codesample inserttable | pagebreak anchor' },
       format: { title: 'Format', items: 'bold italic underline strikethrough superscript subscript codeformat | formats blockformats fontfamily fontsize align lineheight | forecolor backcolor | removeformat' },
       table: { title: 'Table', items: 'inserttable | cell row column | tableprops deletetable' },
       tools: { title: 'Tools', items: 'wordcount | code' },
     },
 
+    // Plugin yang tersedia di TinyMCE 7 Community Edition
     plugins: [
       'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
       'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-      'insertdatetime', 'media', 'table', 'code', 'help', 'wordcount',
-      'pagebreak', 'hr', 'nonbreaking', 'emoticons', 'template', 'imagetools',
-      'quickbars', 'autoresize',
+      'insertdatetime', 'media', 'table', 'help', 'wordcount',
+      'pagebreak', 'quickbars', 'autoresize',
     ].join(' '),
 
+    // Toolbar - group dengan separator untuk readability
     toolbar:
-      'undo redo | blocks | fontfamily fontsize | ' +
+      'undo redo | ' +
+      'blocks fontfamily fontsize | ' +
       'bold italic underline strikethrough superscript subscript | ' +
       'forecolor backcolor | ' +
       'alignleft aligncenter alignright alignjustify | ' +
       'bullist numlist outdent indent lineheight | ' +
-      'table image link media hr pagebreak | ' +
-      'removeformat | fullscreen help',
+      'table image link media pagebreak | ' +
+      'removeformat fullscreen help',
 
     toolbar_mode: 'sliding',
     toolbar_sticky: true,
@@ -310,7 +316,8 @@ async function initTinyMCEEditor() {
       'Preformatted=pre; ' +
       'Div=div',
 
-    // Default styles - dokumen pemerintah
+    // Default styles - dokumen pemerintah (jarak nyaman)
+    // Margin A4 diterapkan via padding body
     content_style: `
       body {
         font-family: 'Times New Roman', Times, serif;
@@ -319,37 +326,50 @@ async function initTinyMCEEditor() {
         color: #000;
         background: #fff;
         margin: 0;
-        padding: 0;
+        padding: ${editorPengaturanHalaman.marginTop || 15}mm ${editorPengaturanHalaman.marginRight || 18}mm ${editorPengaturanHalaman.marginBottom || 15}mm ${editorPengaturanHalaman.marginLeft || 18}mm;
+        box-sizing: border-box;
       }
       p {
         margin: 0 0 ${editorPengaturanHalaman.paragraphSpacing || 8}pt 0;
         line-height: ${editorPengaturanHalaman.lineHeight || 1.5};
       }
+      h1, h2, h3, h4, h5, h6 {
+        margin: 12pt 0 6pt 0;
+        line-height: 1.3;
+      }
+      h1 { font-size: 18pt; }
+      h2 { font-size: 14pt; }
+      h3 { font-size: 12pt; }
+      h4 { font-size: 11pt; }
       table {
         border-collapse: collapse;
         width: 100%;
+        margin: 6pt 0;
       }
       td, th {
         border: 1px solid #000;
         padding: 4px 6px;
         vertical-align: top;
+        line-height: 1.3;
       }
-      h1, h2, h3, h4 {
-        margin: 8pt 0 4pt 0;
+      ul, ol {
+        margin: 6pt 0;
+        padding-left: 24pt;
       }
-      h2 { font-size: 14pt; }
-      h3 { font-size: 12pt; }
       img {
         max-width: 100%;
         height: auto;
+        margin: 6pt 0;
       }
-      /* Page break visual */
-      *[style*="page-break-after"], .mce-pagebreak {
+      .mce-pagebreak {
         border-top: 2px dashed #999;
+        border-bottom: 2px dashed #999;
+        background: #f8fafc;
         margin: 20px 0;
-        padding-top: 10px;
+        padding: 10px;
         text-align: center;
         color: #999;
+        font-size: 10pt;
       }
     `,
 
@@ -408,8 +428,8 @@ async function initTinyMCEEditor() {
       });
     },
 
-    // Skin - modern look
-    skin: 'oxide-dark',
+    // Skin - oxide (light) supaya konsisten dengan dokumen A4 putih
+    skin: 'oxide',
     content_css: false,
 
     // Status bar
@@ -417,12 +437,17 @@ async function initTinyMCEEditor() {
 
     // Quickbars - context menu
     quickbars_selection_toolbar: 'bold italic underline | blocks | bullist numlist',
-    quickbars_insert_toolbar: 'image table | hr pagebreak',
+    quickbars_insert_toolbar: 'image table pagebreak',
     contextmenu: 'link image table | cell row column | paste | undo redo',
 
     // Autoresize - fit content
     autoresize_bottom_margin: 20,
     autoresize_overflow_padding: 20,
+
+    // Branding
+    branding: false,
+    promotion: false,
+    elementpath: false,
   });
 }
 
