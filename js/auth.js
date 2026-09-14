@@ -56,61 +56,46 @@ async function handleModalLogin(e) {
   toastInfo('Sedang login...');
 
   try {
-    // Coba autentikasi via Supabase terlebih dahulu
+    let user = null;
+
+    // 1. Coba autentikasi via Supabase (tabel admin_users)
     if (isSupabaseReady()) {
-      const { data, error } = await supabaseClient
-        .from('admin_users')
-        .select('*')
-        .eq('username', username)
-        .eq('password', password) // NOTE: Hash di production
-        .maybeSingle();
-
-      if (error) throw error;
-
-      if (data) {
-        // Login berhasil
-        currentUser = {
-          username: data.username,
-          role: data.role,
-          nama: data.nama,
-          satuanKerja: data.satuan_kerja || 'all',
-        };
-        adminToken = btoa(username + ':' + Date.now());
-        sessionStorage.setItem('adminToken', adminToken);
-        sessionStorage.setItem('adminUser', JSON.stringify(currentUser));
-
-        closeModal('loginModal');
-        showApp();
-        loadDashboardData();
-
-        const roleLabel = currentUser.role === 'admin' ? 'Administrator' : currentUser.nama;
-        toastSuccess('Login berhasil sebagai ' + roleLabel + '!');
-
-        usernameInput.value = '';
-        passwordInput.value = '';
-        return;
+      try {
+        const dbUser = await loginAdminUser(username, password);
+        if (dbUser) {
+          user = {
+            username: dbUser.username,
+            role: dbUser.role,
+            nama: dbUser.nama,
+            satuanKerja: dbUser.satuan_kerja || 'all',
+          };
+        }
+      } catch (dbErr) {
+        console.warn('[AUTH] Supabase query error, fallback ke demo users:', dbErr.message);
       }
     }
 
-    // Fallback: gunakan credentials demo (offline)
-    if (typeof DEMO_USERS !== 'undefined' && DEMO_USERS.length > 0) {
-      const user = DEMO_USERS.find((u) => u.username === username && u.password === password);
-      if (user) {
-        currentUser = user;
-        adminToken = btoa(username + ':' + Date.now());
-        sessionStorage.setItem('adminToken', adminToken);
-        sessionStorage.setItem('adminUser', JSON.stringify(user));
+    // 2. Fallback: gunakan credentials demo (offline / Supabase belum setup)
+    if (!user && typeof DEMO_USERS !== 'undefined' && DEMO_USERS.length > 0) {
+      user = DEMO_USERS.find((u) => u.username === username && u.password === password) || null;
+    }
 
-        closeModal('loginModal');
-        showApp();
-        loadDashboardData();
+    if (user) {
+      currentUser = user;
+      adminToken = btoa(username + ':' + Date.now());
+      sessionStorage.setItem('adminToken', adminToken);
+      sessionStorage.setItem('adminUser', JSON.stringify(user));
 
-        const roleLabel = user.role === 'admin' ? 'Administrator' : user.nama;
-        toastSuccess('Login berhasil sebagai ' + roleLabel + '!');
-        usernameInput.value = '';
-        passwordInput.value = '';
-        return;
-      }
+      closeModal('loginModal');
+      showApp();
+      loadDashboardData();
+
+      const roleLabel = user.role === 'admin' ? 'Administrator' : user.nama;
+      toastSuccess('Login berhasil sebagai ' + roleLabel + '!');
+
+      usernameInput.value = '';
+      passwordInput.value = '';
+      return;
     }
 
     toastError('Username atau password salah!');
@@ -128,6 +113,14 @@ function handleLogout() {
   sessionStorage.removeItem('adminUser');
   adminToken = null;
   currentUser = null;
+
+  // Reset session & browser-visited flag supaya saat user kembali,
+  // dia dialihkan lagi ke landing page (sesuai requirement)
+  try {
+    localStorage.removeItem('pakti_browser_visited');
+    localStorage.removeItem('pakti_last_activity');
+  } catch (e) {}
+
   showApp();
   navigateTo('dashboard');
   toastSuccess('Logout berhasil!');
@@ -173,11 +166,15 @@ function showApp() {
 }
 
 function updateMenuByRole(role) {
+  // Menu Admin selalu terlihat di sidebar.
+  // Jika user belum login / bukan admin, saat klik akan diminta login
+  // (di-handle oleh navigateTo).
   const adminMenuItems = document.querySelectorAll('[data-page="admin"]');
   adminMenuItems.forEach((item) => {
-    item.style.display = role === 'admin' ? 'flex' : 'none';
+    item.style.display = 'flex';
   });
 
+  // Logout button hanya muncul jika sudah login
   const logoutBtn = document.getElementById('logoutBtn');
   if (logoutBtn) logoutBtn.style.display = adminToken ? 'flex' : 'none';
 }

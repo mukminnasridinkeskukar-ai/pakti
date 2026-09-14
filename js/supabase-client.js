@@ -4,36 +4,18 @@
  * File ini berisi semua fungsi untuk berkomunikasi
  * dengan database & storage Supabase.
  *
- * Konvensi field database (snake_case):
- * - email
- * - no_hp
- * - nama
- * - nip
- * - no_karpeg
- * - tempat_lahir
- * - tanggal_lahir
- * - pendidikan
- * - jenis_kelamin
- * - pangkat_gol
- * - tmt_pangkat
- * - jenis_jf
- * - jenjang_jf
- * - tmt_jf
- * - masa_kerja_gol
- * - satuan_kerja
- * - status
- * - catatan_admin
- * - dok_foto_url
- * - dok_sk_pangkat_url
- * - dok_sk_jabfung_url
- * - dok_pak_konvensional_url
- * - created_at
- * - updated_at
+ * Skema tabel pengajuan_pak (snake_case):
+ *   id, email, no_hp, nama, nip, no_karpeg,
+ *   tempat_lahir, tanggal_lahir, pendidikan, jenis_kelamin,
+ *   pangkat_gol, tmt_pangkat, jenis_jf, jenjang_jf, tmt_jf,
+ *   masa_kerja_gol, satuan_kerja,
+ *   status, catatan_admin,
+ *   dok_foto_url, dok_sk_pangkat_url, dok_sk_jabfung_url, dok_pak_konvensional_url,
+ *   created_at, updated_at
  * ============================================ */
 
 /**
  * Map dari snake_case (DB) ke format lama (Space-separated, kompatibel UI)
- * agar kode UI lama tetap berfungsi.
  */
 function mapRowToUI(row) {
   if (!row) return null;
@@ -64,7 +46,7 @@ function mapRowToUI(row) {
     'Update Terakhir': row.updated_at || row.created_at || '',
     Timestamp: row.created_at || '',
 
-    // Dokumen URLs
+    // Dokumen URLs (UI keys - kompatibel dengan kode lama)
     'Dok_Foto_4x6': row.dok_foto_url || '',
     'Dok_SK_Pangkat_2022_2023': row.dok_sk_pangkat_url || '',
     'Dok_SK_Jabfung_2022_2023': row.dok_sk_jabfung_url || '',
@@ -117,13 +99,12 @@ async function fetchByNIP(nip) {
  */
 async function fetchPAKTerbit(nip) {
   const result = await fetchByNIP(nip);
-  if (!result) return null;
-  // Hanya return jika status Terbit (atau semua, tergantung kebijakan)
-  return result;
+  return result; // return semua data, filter status bisa di UI
 }
 
 /**
- * Insert pengajuan baru
+ * Insert pengajuan baru (dari Formulir Pengajuan)
+ * Insert data dulu, lalu upload dokumen dilakukan terpisah
  */
 async function insertPengajuan(formData) {
   if (!isSupabaseReady()) {
@@ -162,7 +143,8 @@ async function insertPengajuan(formData) {
 }
 
 /**
- * Update data pengajuan (untuk perbaikan)
+ * Update data pengajuan (untuk perbaikan oleh user)
+ * Update data + optional upload dokumen baru
  */
 async function updatePengajuan(id, formData) {
   if (!isSupabaseReady()) {
@@ -225,19 +207,52 @@ async function updateStatus(id, status, catatan) {
 
 /**
  * Hapus pengajuan (admin)
+ * Optional: hapus juga file di storage (best-effort)
  */
 async function deletePengajuan(id) {
   if (!isSupabaseReady()) {
     throw new Error('Supabase belum dikonfigurasi');
   }
 
+  // Ambil data dulu supaya tahu URL dokumen yg akan dihapus dari storage
+  const { data: rowData } = await supabaseClient
+    .from(TABLE_PENGAJUAN)
+    .select('dok_foto_url, dok_sk_pangkat_url, dok_sk_jabfung_url, dok_pak_konvensional_url')
+    .eq('id', id)
+    .maybeSingle();
+
+  // Hapus record di database
   const { error } = await supabaseClient.from(TABLE_PENGAJUAN).delete().eq('id', id);
   if (error) throw error;
+
+  // Best-effort: hapus file di storage (abaikan error)
+  if (rowData) {
+    const urls = [
+      rowData.dok_foto_url,
+      rowData.dok_sk_pangkat_url,
+      rowData.dok_sk_jabfung_url,
+      rowData.dok_pak_konvensional_url,
+    ].filter(Boolean);
+
+    for (const url of urls) {
+      try {
+        // Extract path dari public URL
+        const pathMatch = url.match(/\/storage\/v1\/object\/public\/[^/]+\/(.+)$/);
+        if (pathMatch && pathMatch[1]) {
+          await supabaseClient.storage.from(STORAGE_BUCKET).remove([decodeURIComponent(pathMatch[1])]);
+        }
+      } catch (e) {
+        console.warn('[Delete] Gagal hapus file storage:', url, e.message);
+      }
+    }
+  }
+
   return true;
 }
 
 /**
  * Edit data pengajuan (admin - full edit)
+ * Update field data, field NIP juga bisa diubah oleh admin
  */
 async function adminEditPengajuan(id, fields) {
   if (!isSupabaseReady()) {
@@ -251,11 +266,16 @@ async function adminEditPengajuan(id, fields) {
     jenis_jf: fields.jenisJF,
     jenjang_jf: fields.jenjangJF,
     satuan_kerja: fields.satuanKerja,
-    tmt_pangkat: fields.tmtPangkat,
-    tmt_jf: fields.tmtJF,
+    tmt_pangkat: fields.tmtPangkat || null,
+    tmt_jf: fields.tmtJF || null,
     masa_kerja_gol: fields.masaKerjaGol,
     updated_at: new Date().toISOString(),
   };
+
+  // Hapus field null/undefined supaya tidak overwrite dengan null
+  Object.keys(row).forEach((k) => {
+    if (row[k] === undefined) delete row[k];
+  });
 
   const { data, error } = await supabaseClient
     .from(TABLE_PENGAJUAN)
@@ -284,32 +304,65 @@ async function uploadDocument(file, folder, nip) {
     throw new Error('Supabase belum dikonfigurasi');
   }
 
-  const ext = file.name.split('.').pop().toLowerCase();
+  if (!file) {
+    throw new Error('File tidak ada');
+  }
+
+  // Validasi folder
+  const validFolders = ['foto', 'sk_pangkat', 'sk_jabfung', 'pak_konvensional'];
+  if (!validFolders.includes(folder)) {
+    throw new Error('Folder tidak valid: ' + folder);
+  }
+
+  const ext = (file.name.split('.').pop() || 'bin').toLowerCase();
   const safeNip = String(nip || 'unknown').replace(/[^a-zA-Z0-9]/g, '');
   const fileName = `${folder}/${safeNip}_${Date.now()}.${ext}`;
+
+  console.log('[Storage] Uploading:', fileName, '| Size:', formatFileSize(file.size));
 
   const { error: uploadError } = await supabaseClient.storage
     .from(STORAGE_BUCKET)
     .upload(fileName, file, {
       cacheControl: '3600',
       upsert: false,
-      contentType: file.type,
+      contentType: file.type || 'application/octet-stream',
     });
 
-  if (uploadError) throw uploadError;
+  if (uploadError) {
+    console.error('[Storage] Upload error:', uploadError);
+    throw new Error('Storage: ' + (uploadError.message || JSON.stringify(uploadError)));
+  }
 
   // Get public URL
   const { data } = supabaseClient.storage.from(STORAGE_BUCKET).getPublicUrl(fileName);
 
+  if (!data || !data.publicUrl) {
+    throw new Error('Gagal mendapatkan public URL untuk file');
+  }
+
+  console.log('[Storage] ✅ Upload success:', data.publicUrl);
   return data.publicUrl;
 }
 
 /**
  * Update URL dokumen pada record pengajuan
+ * @param {string} id - UUID record
+ * @param {string} field - Nama field di DB (snake_case): dok_foto_url, dok_sk_pangkat_url, dst.
+ * @param {string} url - Public URL file
  */
 async function updateDocumentURL(id, field, url) {
   if (!isSupabaseReady()) {
     throw new Error('Supabase belum dikonfigurasi');
+  }
+
+  const validFields = [
+    'dok_foto_url',
+    'dok_sk_pangkat_url',
+    'dok_sk_jabfung_url',
+    'dok_pak_konvensional_url',
+  ];
+  if (!validFields.includes(field)) {
+    throw new Error('Field dokumen tidak valid: ' + field);
   }
 
   const { error } = await supabaseClient
@@ -319,4 +372,46 @@ async function updateDocumentURL(id, field, url) {
 
   if (error) throw error;
   return true;
+}
+
+/**
+ * Hapus file dari storage (best-effort, abaikan error)
+ */
+async function deleteStorageFile(publicUrl) {
+  if (!isSupabaseReady() || !publicUrl) return false;
+  try {
+    const pathMatch = publicUrl.match(/\/storage\/v1\/object\/public\/[^/]+\/(.+)$/);
+    if (!pathMatch || !pathMatch[1]) return false;
+    const filePath = decodeURIComponent(pathMatch[1]);
+    await supabaseClient.storage.from(STORAGE_BUCKET).remove([filePath]);
+    return true;
+  } catch (e) {
+    console.warn('[Storage] Gagal hapus file:', e.message);
+    return false;
+  }
+}
+
+/* ============================================
+ * AUTH - Login admin via tabel admin_users
+ * ============================================ */
+
+/**
+ * Login admin via tabel admin_users
+ * @returns {Promise<object|null>} User object jika berhasil
+ */
+async function loginAdminUser(username, password) {
+  if (!isSupabaseReady()) {
+    throw new Error('Supabase belum dikonfigurasi');
+  }
+
+  const { data, error } = await supabaseClient
+    .from(TABLE_ADMIN_USERS)
+    .select('*')
+    .eq('username', username)
+    .eq('password', password)
+    .eq('is_active', true)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data || null;
 }

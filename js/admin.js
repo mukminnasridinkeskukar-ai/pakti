@@ -6,6 +6,14 @@ let deleteTargetId = null;
 let editTargetId = null;
 let statusTargetId = null;
 
+// File storage untuk admin edit dokumen
+let adminEditSelectedFiles = {
+  foto: null,
+  skPangkat: null,
+  skJabfung: null,
+  pakKonvensional: null,
+};
+
 function loadAdminData() {
   filteredData = [...allData];
   renderAdminTable();
@@ -37,15 +45,21 @@ function renderAdminTable() {
 
     tbody.innerHTML = pageData
       .map((row, index) => {
+        const rowIndex = start + index;
+        const rowId = row._id || '';
+
         const actionButtons = isAdmin
           ? `<div style="display: flex; gap: 6px;">
-              <button class="btn btn-primary btn-sm btn-icon" onclick="showEdit(${start + index})" title="Edit">
+              <button class="btn btn-primary btn-sm btn-icon" onclick="showDetail(${rowIndex})" title="Lihat Detail">
+                <i class="fas fa-eye"></i>
+              </button>
+              <button class="btn btn-success btn-sm btn-icon" onclick="showEdit(${rowIndex})" title="Edit Data">
                 <i class="fas fa-edit"></i>
               </button>
-              <button class="btn btn-warning btn-sm btn-icon" onclick="openStatusModal(${start + index})" title="Update Status">
+              <button class="btn btn-warning btn-sm btn-icon" onclick="openStatusModal(${rowIndex})" title="Update Status">
                 <i class="fas fa-tasks"></i>
               </button>
-              <button class="btn btn-danger btn-sm btn-icon" onclick="openDeleteModal('${escapeHtml(row._id || '')}')" title="Hapus">
+              <button class="btn btn-danger btn-sm btn-icon" onclick="openDeleteModal('${escapeHtml(String(rowId))}')" title="Hapus Data">
                 <i class="fas fa-trash"></i>
               </button>
             </div>`
@@ -53,7 +67,7 @@ function renderAdminTable() {
 
         return `
           <tr>
-            <td>${start + index + 1}</td>
+            <td>${rowIndex + 1}</td>
             <td><strong>${escapeHtml(row['Nama Lengkap dengan Gelar'] || '-')}</strong></td>
             <td>${escapeHtml(row['NIP'] || '-')}</td>
             <td>${escapeHtml(row['Pangkat/Gol'] || '-')}</td>
@@ -103,11 +117,39 @@ function filterAdmin() {
 }
 
 /**
- * Show detail modal
+ * Show detail modal (lengkap dengan link semua dokumen)
  */
 function showDetail(index) {
   const row = filteredData[index];
   if (!row) return;
+
+  const dokumenFields = [
+    { key: 'Dok_Foto_4x6', label: 'Foto Berwarna 4x6 cm', icon: 'fa-image' },
+    { key: 'Dok_SK_Pangkat_2022_2023', label: 'SK Pangkat Terakhir', icon: 'fa-file-pdf' },
+    { key: 'Dok_SK_Jabfung_2022_2023', label: 'SK Jabatan Fungsional', icon: 'fa-file-pdf' },
+    { key: 'Dok_PAK_Konvensional_s_d_2022', label: 'PAK Konvensional', icon: 'fa-file-contract' },
+  ];
+
+  let dokumenHTML = '';
+  for (const doc of dokumenFields) {
+    if (row[doc.key]) {
+      dokumenHTML += `
+        <div style="grid-column: 1 / -1; padding: 12px; background: var(--light-bg); border-radius: 8px; margin-bottom: 8px;">
+          <label style="font-size: 0.8rem; color: var(--text-light); display: block; margin-bottom: 8px;">
+            <i class="fas ${doc.icon}"></i> ${doc.label}
+          </label>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button class="btn btn-primary btn-sm" onclick="viewDocument('${escapeHtml(row[doc.key])}')">
+              <i class="fas fa-eye"></i> Lihat
+            </button>
+            <a href="${escapeHtml(row[doc.key])}" target="_blank" class="btn btn-success btn-sm" download>
+              <i class="fas fa-download"></i> Download
+            </a>
+          </div>
+        </div>
+      `;
+    }
+  }
 
   const html = `
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
@@ -118,6 +160,14 @@ function showDetail(index) {
       <div>
         <label style="font-size: 0.8rem; color: var(--text-light);">NIP</label>
         <p style="font-weight: 600;">${escapeHtml(row['NIP'] || '-')}</p>
+      </div>
+      <div>
+        <label style="font-size: 0.8rem; color: var(--text-light);">Email</label>
+        <p style="font-weight: 600;">${escapeHtml(row['Email'] || '-')}</p>
+      </div>
+      <div>
+        <label style="font-size: 0.8rem; color: var(--text-light);">No HP</label>
+        <p style="font-weight: 600;">${escapeHtml(row['NoHP'] || '-')}</p>
       </div>
       <div>
         <label style="font-size: 0.8rem; color: var(--text-light);">Satuan Kerja</label>
@@ -137,11 +187,11 @@ function showDetail(index) {
       </div>
       <div>
         <label style="font-size: 0.8rem; color: var(--text-light);">TMT Pangkat</label>
-        <p style="font-weight: 600;">${escapeHtml(row['TMT Pangkat'] || '-')}</p>
+        <p style="font-weight: 600;">${formatDate(row['TMT Pangkat'])}</p>
       </div>
       <div>
         <label style="font-size: 0.8rem; color: var(--text-light);">TMT JF</label>
-        <p style="font-weight: 600;">${escapeHtml(row['TMT JF'] || '-')}</p>
+        <p style="font-weight: 600;">${formatDate(row['TMT JF'])}</p>
       </div>
       <div>
         <label style="font-size: 0.8rem; color: var(--text-light);">Masa Kerja Gol</label>
@@ -155,19 +205,7 @@ function showDetail(index) {
         <label style="font-size: 0.8rem; color: var(--text-light);">Catatan Admin</label>
         <p style="font-weight: 600;">${escapeHtml(row['Catatan Admin'] || '-')}</p>
       </div>
-      ${
-        row['Dok_Foto_4x6']
-          ? `
-      <div style="grid-column: 1 / -1;">
-        <label style="font-size: 0.8rem; color: var(--text-light);">Dokumen Foto</label>
-        <br>
-        <button class="btn btn-primary btn-sm" onclick="viewDocument('${escapeHtml(row['Dok_Foto_4x6'])}')">
-          <i class="fas fa-file-image"></i> Lihat Foto
-        </button>
-      </div>
-      `
-          : ''
-      }
+      ${dokumenHTML}
     </div>
   `;
 
@@ -181,7 +219,15 @@ function showDetail(index) {
  */
 function openStatusModal(index) {
   const row = filteredData[index];
-  if (!row) return;
+  if (!row) {
+    toastError('Data tidak ditemukan!');
+    return;
+  }
+
+  if (!row._id) {
+    toastError('ID record tidak valid (data mungkin lokal/demo). Reload halaman & coba lagi.');
+    return;
+  }
 
   statusTargetId = row._id;
   const statusSelect = document.getElementById('updateStatus');
@@ -205,18 +251,19 @@ async function submitStatusUpdate() {
   const catatan = document.getElementById('updateCatatan').value;
 
   const btn = document.querySelector('#statusModal .btn-primary');
-  if (btn) btn.disabled = true;
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading-spinner"></span> Menyimpan...';
+  }
 
   try {
-    await updateStatus(statusTargetId, newStatus, catatan);
+    const result = await updateStatus(statusTargetId, newStatus, catatan);
     toastSuccess('Status berhasil diupdate!');
 
     // Update local data
     const index = allData.findIndex((row) => row._id === statusTargetId);
     if (index !== -1) {
-      allData[index]['Status'] = newStatus;
-      allData[index]['Catatan Admin'] = catatan;
-      allData[index]['Update Terakhir'] = new Date().toISOString();
+      allData[index] = result;
     }
 
     closeModal('statusModal');
@@ -225,33 +272,132 @@ async function submitStatusUpdate() {
     console.error('[Status Update] Error:', error);
     toastError('Gagal merubah status: ' + (error.message || ''));
   } finally {
-    if (btn) btn.disabled = false;
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-save"></i> Simpan';
+    }
   }
 }
 
 /**
- * Show edit modal
+ * Show edit modal - populate semua field
  */
 function showEdit(index) {
   const row = filteredData[index];
-  if (!row) return;
+  if (!row) {
+    toastError('Data tidak ditemukan!');
+    return;
+  }
+
+  if (!row._id) {
+    toastError('ID record tidak valid (data mungkin lokal/demo). Reload halaman & coba lagi.');
+    return;
+  }
 
   editTargetId = row._id;
-  document.getElementById('editNama').value = row['Nama Lengkap dengan Gelar'] || '';
-  document.getElementById('editNIP').value = row['NIP'] || '';
-  document.getElementById('editPangkatGol').value = row['Pangkat/Gol'] || '';
-  document.getElementById('editJenisJF').value = row['Jenis JF'] || '';
-  document.getElementById('editJenjangJF').value = row['Jenjang JF'] || '';
-  document.getElementById('editSatuanKerja').value = row['Satuan Kerja'] || '';
-  document.getElementById('editTmtpangkat').value = row['TMT Pangkat'] || '';
-  document.getElementById('editTmtjf').value = row['TMT JF'] || '';
-  document.getElementById('editMasaKerjaGol').value = row['Masa Kerja Gol'] || '';
+
+  // Set field values
+  const setVal = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.value = val || '';
+  };
+
+  setVal('editNama', row['Nama Lengkap dengan Gelar']);
+  setVal('editNIP', row['NIP']);
+  setVal('editPangkatGol', row['Pangkat/Gol']);
+  setVal('editJenisJF', row['Jenis JF']);
+  setVal('editJenjangJF', row['Jenjang JF']);
+  setVal('editSatuanKerja', row['Satuan Kerja']);
+  setVal('editTmtpangkat', row['TMT Pangkat']);
+  setVal('editTmtjf', row['TMT JF']);
+  setVal('editMasaKerjaGol', row['Masa Kerja Gol']);
+
+  // Reset selected files
+  adminEditSelectedFiles = { foto: null, skPangkat: null, skJabfung: null, pakKonvensional: null };
+
+  // Reset file upload UI
+  ['Foto', 'SKPangkat', 'SKJabfung', 'PAK'].forEach((type) => {
+    const fileNameEl = document.getElementById('edit_fileName' + type);
+    const uploadAreaEl = document.getElementById('edit_fileUploadArea' + type);
+    if (fileNameEl) {
+      fileNameEl.style.display = 'none';
+      fileNameEl.textContent = '';
+    }
+    if (uploadAreaEl) uploadAreaEl.classList.remove('has-file');
+  });
 
   openModal('editModal');
 }
 
 /**
- * Submit edit
+ * Handle file select dari modal edit admin
+ */
+function handleEditFileSelect(input, type) {
+  const file = input.files[0];
+  if (!file) return;
+
+  const config = fileConfig[type];
+  if (!config) {
+    toastError('Tipe file tidak dikenal');
+    return;
+  }
+
+  // Validate type
+  if (!config.accept.includes(file.type)) {
+    const acceptStr = type === 'foto' ? 'JPG, JPEG, atau PNG' : 'PDF';
+    toastError(`Hanya file ${acceptStr} yang diizinkan untuk ${config.name}!`);
+    return;
+  }
+
+  // Validate size
+  if (file.size > config.maxSize) {
+    const maxSizeStr = type === 'foto' ? '2MB' : '1MB';
+    toastError(`Ukuran file maksimal ${maxSizeStr} untuk ${config.name}!`);
+    return;
+  }
+
+  // Store
+  adminEditSelectedFiles[type] = file;
+
+  // Update UI
+  const fieldName = type.charAt(0).toUpperCase() + type.slice(1);
+  const fileNameEl = document.getElementById('edit_fileName' + fieldName);
+  const uploadAreaEl = document.getElementById('edit_fileUploadArea' + fieldName);
+
+  if (fileNameEl) {
+    fileNameEl.textContent = '✓ ' + file.name + ' (' + formatFileSize(file.size) + ')';
+    fileNameEl.style.display = 'block';
+  }
+  if (uploadAreaEl) uploadAreaEl.classList.add('has-file');
+
+  toastSuccess(`${config.name} siap diupload`);
+}
+
+function handleEditDragOver(event) {
+  event.preventDefault();
+  event.stopPropagation();
+  event.currentTarget.classList.add('drag-over');
+}
+
+function handleEditDragLeave(event) {
+  event.preventDefault();
+  event.stopPropagation();
+  event.currentTarget.classList.remove('drag-over');
+}
+
+function handleEditDrop(event, type) {
+  event.preventDefault();
+  event.stopPropagation();
+  event.currentTarget.classList.remove('drag-over');
+  const files = event.dataTransfer.files;
+  if (files.length > 0) {
+    const fakeInput = { files: [files[0]] };
+    handleEditFileSelect(fakeInput, type);
+  }
+}
+
+/**
+ * Submit edit - update data + upload dokumen baru (jika ada)
  */
 async function submitEdit() {
   if (!editTargetId) {
@@ -260,28 +406,71 @@ async function submitEdit() {
   }
 
   const btn = document.querySelector('#editModal .btn-primary');
-  if (btn) btn.disabled = true;
-
-  const fields = {
-    nama: document.getElementById('editNama').value,
-    nip: document.getElementById('editNIP').value,
-    pangkatGol: document.getElementById('editPangkatGol').value,
-    jenisJF: document.getElementById('editJenisJF').value,
-    jenjangJF: document.getElementById('editJenjangJF').value,
-    satuanKerja: document.getElementById('editSatuanKerja').value,
-    tmtPangkat: document.getElementById('editTmtpangkat').value,
-    tmtJF: document.getElementById('editTmtjf').value,
-    masaKerjaGol: document.getElementById('editMasaKerjaGol').value,
-  };
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading-spinner"></span> Menyimpan...';
+  }
 
   try {
-    const result = await adminEditPengajuan(editTargetId, fields);
-    toastSuccess('Data berhasil diupdate!');
+    const fields = {
+      nama: document.getElementById('editNama').value,
+      nip: document.getElementById('editNIP').value,
+      pangkatGol: document.getElementById('editPangkatGol').value,
+      jenisJF: document.getElementById('editJenisJF').value,
+      jenjangJF: document.getElementById('editJenjangJF').value,
+      satuanKerja: document.getElementById('editSatuanKerja').value,
+      tmtPangkat: document.getElementById('editTmtpangkat').value,
+      tmtJF: document.getElementById('editTmtjf').value,
+      masaKerjaGol: document.getElementById('editMasaKerjaGol').value,
+    };
 
-    // Update local data
-    const index = allData.findIndex((row) => row._id === editTargetId);
-    if (index !== -1) {
-      allData[index] = result;
+    // 1. Update field data
+    toastInfo('Menyimpan perubahan data...');
+    let result = await adminEditPengajuan(editTargetId, fields);
+
+    // 2. Upload dokumen baru (jika ada yang dipilih)
+    const fileTypes = ['foto', 'skPangkat', 'skJabfung', 'pakKonvensional'];
+    let uploadedCount = 0;
+
+    for (const fileType of fileTypes) {
+      if (adminEditSelectedFiles[fileType]) {
+        const config = fileConfig[fileType];
+        try {
+          toastInfo(`Mengupload ${config.name}...`);
+          const url = await uploadDocument(
+            adminEditSelectedFiles[fileType],
+            config.storagePath,
+            fields.nip || editTargetId
+          );
+          await updateDocumentURL(editTargetId, config.dbField, url);
+          uploadedCount++;
+        } catch (uploadErr) {
+          console.error('[Edit Upload] Error:', uploadErr);
+          toastWarning(`Gagal upload ${config.name}: ${uploadErr.message}`);
+        }
+      }
+    }
+
+    // Reload full data dari server untuk mendapat state terbaru
+    if (uploadedCount > 0) {
+      toastInfo('Memuat ulang data dari server...');
+      try {
+        await loadDashboardData();
+      } catch (e) {
+        console.warn('[Edit] Reload gagal, tetap update lokal:', e.message);
+      }
+    } else {
+      // Update local data dengan hasil edit
+      const index = allData.findIndex((row) => row._id === editTargetId);
+      if (index !== -1) {
+        allData[index] = result;
+      }
+    }
+
+    if (uploadedCount > 0) {
+      toastSuccess(`Data berhasil diupdate & ${uploadedCount} dokumen diupload!`);
+    } else {
+      toastSuccess('Data berhasil diupdate!');
     }
 
     closeModal('editModal');
@@ -290,7 +479,10 @@ async function submitEdit() {
     console.error('[Edit Submit] Error:', error);
     toastError('Gagal mengupdate data: ' + (error.message || ''));
   } finally {
-    if (btn) btn.disabled = false;
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-save"></i> Simpan Perubahan';
+    }
   }
 }
 
@@ -298,6 +490,10 @@ async function submitEdit() {
  * Open delete modal
  */
 function openDeleteModal(id) {
+  if (!id || id === 'undefined' || id === '') {
+    toastError('ID data tidak valid!');
+    return;
+  }
   deleteTargetId = id;
   openModal('deleteModal');
 }
@@ -312,7 +508,10 @@ async function confirmDelete() {
   }
 
   const btn = document.querySelector('#deleteModal .btn-danger');
-  if (btn) btn.disabled = true;
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading-spinner"></span> Menghapus...';
+  }
 
   try {
     await deletePengajuan(deleteTargetId);
@@ -327,15 +526,22 @@ async function confirmDelete() {
     console.error('[Delete] Error:', error);
     toastError('Gagal menghapus data: ' + (error.message || ''));
   } finally {
-    if (btn) btn.disabled = false;
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-trash"></i> Hapus';
+    }
   }
 }
 
 /**
- * Refresh admin data
+ * Refresh admin data - reload from server
  */
 function refreshAdmin() {
-  loadDashboardData(); // Reload from server
+  if (typeof loadDashboardData === 'function') {
+    loadDashboardData().then(() => {
+      loadAdminData();
+    });
+  }
   toastSuccess('Data diperbarui!');
 }
 
@@ -343,19 +549,62 @@ function refreshAdmin() {
  * Export data to CSV
  */
 function exportExcel() {
-  let csv = 'No,Nama Lengkap,NIP,Pangkat/Gol,Satuan Kerja,Jenis JF,Jenjang JF,Status,Catatan\n';
+  if (filteredData.length === 0) {
+    toastWarning('Tidak ada data untuk diexport');
+    return;
+  }
+
+  const headers = [
+    'No',
+    'Nama Lengkap',
+    'NIP',
+    'Email',
+    'No HP',
+    'Pangkat/Gol',
+    'Satuan Kerja',
+    'Jenis JF',
+    'Jenjang JF',
+    'TMT Pangkat',
+    'TMT JF',
+    'Masa Kerja Gol',
+    'Status',
+    'Catatan Admin',
+    'Update Terakhir',
+  ];
+
+  let csv = headers.join(',') + '\n';
+
   filteredData.forEach((row, index) => {
-    csv +=
-      `${index + 1},"${row['Nama Lengkap dengan Gelar'] || ''}","${row['NIP'] || ''}","${row['Pangkat/Gol'] || ''}","${row['Satuan Kerja'] || ''}","${row['Jenis JF'] || ''}","${row['Jenjang JF'] || ''}","${row['Status'] || ''}","${row['Catatan Admin'] || ''}"\n`;
+    const values = [
+      index + 1,
+      `"${row['Nama Lengkap dengan Gelar'] || ''}"`,
+      `"${row['NIP'] || ''}"`,
+      `"${row['Email'] || ''}"`,
+      `"${row['NoHP'] || ''}"`,
+      `"${row['Pangkat/Gol'] || ''}"`,
+      `"${row['Satuan Kerja'] || ''}"`,
+      `"${row['Jenis JF'] || ''}"`,
+      `"${row['Jenjang JF'] || ''}"`,
+      `"${row['TMT Pangkat'] || ''}"`,
+      `"${row['TMT JF'] || ''}"`,
+      `"${row['Masa Kerja Gol'] || ''}"`,
+      `"${row['Status'] || ''}"`,
+      `"${(row['Catatan Admin'] || '').replace(/"/g, '""')}"`,
+      `"${row['Update Terakhir'] || ''}"`,
+    ];
+    csv += values.join(',') + '\n';
   });
 
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  // BOM untuk Excel supaya UTF-8 terbaca
+  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
   a.download = `PAK_Export_${new Date().toISOString().split('T')[0]}.csv`;
+  document.body.appendChild(a);
   a.click();
+  document.body.removeChild(a);
   URL.revokeObjectURL(url);
 
-  toastSuccess('Export berhasil!');
+  toastSuccess('Export CSV berhasil!');
 }

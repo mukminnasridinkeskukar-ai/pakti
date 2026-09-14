@@ -1036,7 +1036,10 @@
           <div class="table-container">
             <div class="table-header">
               <h3 class="table-title"><i class="fas fa-cog"></i> Kelola Data Pengajuan</h3>
-              <div style="display: flex; gap: 8px;">
+              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <button class="btn btn-success btn-sm" onclick="navigateTo('formulir')" title="Tambah data baru via Formulir Pengajuan">
+                  <i class="fas fa-plus"></i> Tambah Data
+                </button>
                 <button class="btn btn-success btn-sm btn-export" onclick="exportExcel()">
                   <i class="fas fa-file-excel"></i> Export
                 </button>
@@ -1130,40 +1133,87 @@
        MODAL: EDIT DATA
        ============================================ -->
   <div class="modal-overlay" id="editModal">
-    <div class="modal" style="max-width: 700px;">
+    <div class="modal" style="max-width: 800px; max-height: 90vh; overflow-y: auto;">
       <div class="modal-header">
-        <h3 class="modal-title"><i class="fas fa-edit"></i> Edit Data</h3>
+        <h3 class="modal-title"><i class="fas fa-edit"></i> Edit Data Pengajuan</h3>
         <button class="modal-close" onclick="closeModal('editModal')"><i class="fas fa-times"></i></button>
       </div>
       <div class="modal-body">
+        <!-- Form Data Utama -->
         <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
           <div class="form-group">
-            <label class="form-label">Nama Lengkap</label>
+            <label class="form-label">Nama Lengkap <span class="required">*</span></label>
             <input type="text" class="form-input" id="editNama">
           </div>
           <div class="form-group">
-            <label class="form-label">NIP</label>
-            <input type="text" class="form-input" id="editNIP">
+            <label class="form-label">NIP <span class="required">*</span></label>
+            <input type="text" class="form-input" id="editNIP" maxlength="18">
           </div>
           <div class="form-group">
-            <label class="form-label">Pangkat/Gol</label>
+            <label class="form-label">Pangkat/Gol <span class="required">*</span></label>
             <select class="form-select" id="editPangkatGol" style="width: 100%;">
+              <option value="">Pilih Pangkat</option>
               <option value="Pembina - IV/a Ahli Madya">Pembina - IV/a Ahli Madya</option>
-              <option value="Penata Muda - III/a Ahli Pertama">Penata Muda - III/a Ahli Pertama</option>
+              <option value="Pembina - IV/a Ahli Muda">Pembina - IV/a Ahli Muda</option>
+              <option value="Pembina Tk. I - IV/b Ahli Madya">Pembina Tk. I - IV/b Ahli Madya</option>
+              <option value="Pembina Tk. I - IV/b Ahli Muda">Pembina Tk. I - IV/b Ahli Muda</option>
+              <option value="Pembina Utama Muda - IV/c Ahli Madya">Pembina Utama Muda - IV/c Ahli Madya</option>
+              <option value="Pembina Utama Madya - IV/d Ahli Utama">Pembina Utama Madya - IV/d Ahli Utama</option>
+              <option value="Penata - III/c Ahli Muda">Penata - III/c Ahli Muda</option>
+              <option value="Penata - III/c Ahli Pertama">Penata - III/c Ahli Pertama</option>
+              <option value="Penata - III/c Penyelia">Penata - III/c Penyelia</option>
+              <option value="Penata Tk. I - III/d Ahli Madya">Penata Tk. I - III/d Ahli Madya</option>
+              <option value="Penata Tk. I - III/d Ahli Muda">Penata Tk. I - III/d Ahli Muda</option>
               <option value="Penata Tk. I - III/d Penyelia">Penata Tk. I - III/d Penyelia</option>
+              <option value="Penata Muda - III/a Ahli Pertama">Penata Muda - III/a Ahli Pertama</option>
+              <option value="Penata Muda - III/a Mahir">Penata Muda - III/a Mahir</option>
+              <option value="Penata Muda Tk. I - III/b Ahli Muda">Penata Muda Tk. I - III/b Ahli Muda</option>
+              <option value="Penata Muda Tk. I - III/b Ahli Pertama">Penata Muda Tk. I - III/b Ahli Pertama</option>
+              <option value="Penata Muda Tk. I - III/b Mahir">Penata Muda Tk. I - III/b Mahir</option>
+              <option value="Pengatur Muda - II/a Pemula">Pengatur Muda - II/a Pemula</option>
+              <option value="Pengatur Muda Tk. I - II/b Terampil">Pengatur Muda Tk. I - II/b Terampil</option>
+              <option value="Pengatur - II/c Terampil">Pengatur - II/c Terampil</option>
+              <option value="Pengatur Tk. I - II/d Terampil">Pengatur Tk. I - II/d Terampil</option>
             </select>
           </div>
           <div class="form-group">
-            <label class="form-label">Jenis JF</label>
+            <label class="form-label">Jenis JF <span class="required">*</span></label>
             <select class="form-select" id="editJenisJF" style="width: 100%;">
-              <option value="Perawat">Perawat</option>
+              <option value="">Pilih Jenis JF</option>
+              <option value="Administrator Kesehatan">Administrator Kesehatan</option>
+              <option value="Apoteker">Apoteker</option>
+              <option value="Asisten Apoteker">Asisten Apoteker</option>
+              <option value="Asisten Penata Anestesi">Asisten Penata Anestesi</option>
+              <option value="Bendahara">Bendahara</option>
               <option value="Bidan">Bidan</option>
               <option value="Dokter">Dokter</option>
+              <option value="Dokter Gigi">Dokter Gigi</option>
+              <option value="Epidemiolog Kesehatan">Epidemiolog Kesehatan</option>
+              <option value="Fisikawan Medis">Fisikawan Medis</option>
+              <option value="Fisioterapis">Fisioterapis</option>
+              <option value="Nutrisionis">Nutrisionis</option>
+              <option value="Okupasi Terapis">Okupasi Terapis</option>
+              <option value="Pembimbing Kesehatan Kerja">Pembimbing Kesehatan Kerja</option>
+              <option value="Penata Anestesi">Penata Anestesi</option>
+              <option value="Perawat">Perawat</option>
+              <option value="Perekam Medis">Perekam Medis</option>
+              <option value="Pranata Laboratorium Kesehatan">Pranata Laboratorium Kesehatan</option>
+              <option value="Promosi Kesehatan dan Ilmu Perilaku">Promosi Kesehatan dan Ilmu Perilaku</option>
+              <option value="Psikologi Klinis">Psikologi Klinis</option>
+              <option value="Radiografer">Radiografer</option>
+              <option value="Refraksionis Optisien / Optometris">Refraksionis Optisien / Optometris</option>
+              <option value="Teknisi Elektromedis">Teknisi Elektromedis</option>
+              <option value="Teknisi Gigi">Teknisi Gigi</option>
+              <option value="Teknisi Transfusi Darah">Teknisi Transfusi Darah</option>
+              <option value="Tenaga Sanitasi Lingkungan">Tenaga Sanitasi Lingkungan</option>
+              <option value="Terapis Gigi dan Mulut">Terapis Gigi dan Mulut</option>
+              <option value="Terapis Wicara">Terapis Wicara</option>
             </select>
           </div>
           <div class="form-group">
-            <label class="form-label">Jenjang JF</label>
+            <label class="form-label">Jenjang JF <span class="required">*</span></label>
             <select class="form-select" id="editJenjangJF" style="width: 100%;">
+              <option value="">Pilih Jenjang</option>
               <option value="Terampil">Terampil</option>
               <option value="Mahir">Mahir</option>
               <option value="Penyelia">Penyelia</option>
@@ -1173,10 +1223,48 @@
             </select>
           </div>
           <div class="form-group">
-            <label class="form-label">Satuan Kerja</label>
+            <label class="form-label">Satuan Kerja <span class="required">*</span></label>
             <select class="form-select" id="editSatuanKerja" style="width: 100%;">
+              <option value="">Pilih Satuan Kerja</option>
               <option value="Dinas Kesehatan">Dinas Kesehatan</option>
+              <option value="UPTD Puskesmas Badak Baru">UPTD Puskesmas Badak Baru</option>
+              <option value="UPTD Puskesmas Batuah">UPTD Puskesmas Batuah</option>
+              <option value="UPTD Puskesmas Bunga Jadi">UPTD Puskesmas Bunga Jadi</option>
+              <option value="UPTD Puskesmas Handil Baru">UPTD Puskesmas Handil Baru</option>
+              <option value="UPTD Puskesmas Jonggon Jaya">UPTD Puskesmas Jonggon Jaya</option>
+              <option value="UPTD Puskesmas Kahala">UPTD Puskesmas Kahala</option>
+              <option value="UPTD Puskesmas Kembang Janggut">UPTD Puskesmas Kembang Janggut</option>
+              <option value="UPTD Puskesmas Kota Bangun">UPTD Puskesmas Kota Bangun</option>
+              <option value="UPTD Puskesmas Loa Duri">UPTD Puskesmas Loa Duri</option>
+              <option value="UPTD Puskesmas Loa Ipuh">UPTD Puskesmas Loa Ipuh</option>
+              <option value="UPTD Puskesmas Loa Janan">UPTD Puskesmas Loa Janan</option>
+              <option value="UPTD Puskesmas Loa Kulu">UPTD Puskesmas Loa Kulu</option>
+              <option value="UPTD Puskesmas Mangkurawang">UPTD Puskesmas Mangkurawang</option>
+              <option value="UPTD Puskesmas Marangkayu">UPTD Puskesmas Marangkayu</option>
+              <option value="UPTD Puskesmas Muara Badak">UPTD Puskesmas Muara Badak</option>
+              <option value="UPTD Puskesmas Muara Jawa">UPTD Puskesmas Muara Jawa</option>
+              <option value="UPTD Puskesmas Muara Kaman">UPTD Puskesmas Muara Kaman</option>
+              <option value="UPTD Puskesmas Muara Muntai">UPTD Puskesmas Muara Muntai</option>
+              <option value="UPTD Puskesmas Muara Wis">UPTD Puskesmas Muara Wis</option>
+              <option value="UPTD Puskesmas Perangat">UPTD Puskesmas Perangat</option>
+              <option value="UPTD Puskesmas Rapak Mahang">UPTD Puskesmas Rapak Mahang</option>
+              <option value="UPTD Puskesmas Rimba Ayu">UPTD Puskesmas Rimba Ayu</option>
+              <option value="UPTD Puskesmas Ritan Baru">UPTD Puskesmas Ritan Baru</option>
               <option value="UPTD Puskesmas Samboja">UPTD Puskesmas Samboja</option>
+              <option value="UPTD Puskesmas Sangasanga">UPTD Puskesmas Sangasanga</option>
+              <option value="UPTD Puskesmas Sebulu I">UPTD Puskesmas Sebulu I</option>
+              <option value="UPTD Puskesmas Sebulu II">UPTD Puskesmas Sebulu II</option>
+              <option value="UPTD Puskesmas Separi III">UPTD Puskesmas Separi III</option>
+              <option value="UPTD Puskesmas Sungai Merdeka">UPTD Puskesmas Sungai Merdeka</option>
+              <option value="UPTD Puskesmas Sungai Meriam">UPTD Puskesmas Sungai Meriam</option>
+              <option value="UPTD Puskesmas Tabang">UPTD Puskesmas Tabang</option>
+              <option value="UPTD Puskesmas Teluk Dalam">UPTD Puskesmas Teluk Dalam</option>
+              <option value="RSUD Aji Muhammad Parikesit">RSUD Aji Muhammad Parikesit</option>
+              <option value="RSUD Aji Batara Agung Dewa Sakti">RSUD Aji Batara Agung Dewa Sakti</option>
+              <option value="RSUD Dayaku Raja">RSUD Dayaku Raja</option>
+              <option value="UPT Labkesda dan Elektromedis">UPT Labkesda dan Elektromedis</option>
+              <option value="UPT Gudang Farmasi Klinik">UPT Gudang Farmasi Klinik</option>
+              <option value="RSUD Aji Muhammad Idris">RSUD Aji Muhammad Idris</option>
             </select>
           </div>
           <div class="form-group">
@@ -1190,6 +1278,92 @@
           <div class="form-group" style="grid-column: 1 / -1;">
             <label class="form-label">Masa Kerja Gol</label>
             <input type="text" class="form-input" id="editMasaKerjaGol" placeholder="Contoh: 05 Tahun 03 Bulan">
+          </div>
+        </div>
+
+        <!-- Upload Dokumen (Opsional - Hanya jika ingin ganti dokumen) -->
+        <div class="form-group full-width" style="margin-top: 24px; padding-top: 20px; border-top: 2px dashed var(--border-color);">
+          <label class="form-label">
+            <i class="fas fa-file-upload"></i> Ganti Dokumen (Opsional)
+            <span style="font-weight: normal; font-size: 0.85rem; color: var(--text-light); display: block; margin-top: 4px;">
+              Upload hanya jika ingin mengganti dokumen yang ada
+            </span>
+          </label>
+
+          <!-- 1. Foto -->
+          <div class="file-upload-item">
+            <label class="file-upload-label">1. Foto Berwarna 4x6 cm</label>
+            <div class="file-upload-wrapper">
+              <div class="file-upload-area" id="edit_fileUploadAreaFoto"
+                   ondrop="handleEditDrop(event, 'foto')"
+                   ondragover="handleEditDragOver(event)"
+                   ondragleave="handleEditDragLeave(event)"
+                   onclick="document.getElementById('edit_fileInputFoto').click()">
+                <i class="fas fa-image"></i>
+                <p>Klik atau drag file foto di sini</p>
+                <span>Format: JPG/JPEG/PNG | Maks: 2MB</span>
+              </div>
+              <input type="file" id="edit_fileInputFoto" accept=".jpg,.jpeg,.png" style="display: none;"
+                     onchange="handleEditFileSelect(this, 'foto')">
+              <div class="file-name" id="edit_fileNameFoto" style="display: none;"></div>
+            </div>
+          </div>
+
+          <!-- 2. SK Pangkat -->
+          <div class="file-upload-item">
+            <label class="file-upload-label">2. SK Pangkat Terakhir 2022/2023</label>
+            <div class="file-upload-wrapper">
+              <div class="file-upload-area" id="edit_fileUploadAreaSKPangkat"
+                   ondrop="handleEditDrop(event, 'skPangkat')"
+                   ondragover="handleEditDragOver(event)"
+                   ondragleave="handleEditDragLeave(event)"
+                   onclick="document.getElementById('edit_fileInputSKPangkat').click()">
+                <i class="fas fa-file-pdf"></i>
+                <p>Klik atau drag file PDF di sini</p>
+                <span>Format: PDF | Maks: 1MB</span>
+              </div>
+              <input type="file" id="edit_fileInputSKPangkat" accept=".pdf" style="display: none;"
+                     onchange="handleEditFileSelect(this, 'skPangkat')">
+              <div class="file-name" id="edit_fileNameSKPangkat" style="display: none;"></div>
+            </div>
+          </div>
+
+          <!-- 3. SK Jabfung -->
+          <div class="file-upload-item">
+            <label class="file-upload-label">3. SK Jabatan Fungsional 2022/2023</label>
+            <div class="file-upload-wrapper">
+              <div class="file-upload-area" id="edit_fileUploadAreaSKJabfung"
+                   ondrop="handleEditDrop(event, 'skJabfung')"
+                   ondragover="handleEditDragOver(event)"
+                   ondragleave="handleEditDragLeave(event)"
+                   onclick="document.getElementById('edit_fileInputSKJabfung').click()">
+                <i class="fas fa-file-pdf"></i>
+                <p>Klik atau drag file PDF di sini</p>
+                <span>Format: PDF | Maks: 1MB</span>
+              </div>
+              <input type="file" id="edit_fileInputSKJabfung" accept=".pdf" style="display: none;"
+                     onchange="handleEditFileSelect(this, 'skJabfung')">
+              <div class="file-name" id="edit_fileNameSKJabfung" style="display: none;"></div>
+            </div>
+          </div>
+
+          <!-- 4. PAK Konvensional -->
+          <div class="file-upload-item">
+            <label class="file-upload-label">4. PAK Konvensional Periode s/d 2022</label>
+            <div class="file-upload-wrapper">
+              <div class="file-upload-area" id="edit_fileUploadAreaPAK"
+                   ondrop="handleEditDrop(event, 'pakKonvensional')"
+                   ondragover="handleEditDragOver(event)"
+                   ondragleave="handleEditDragLeave(event)"
+                   onclick="document.getElementById('edit_fileInputPAK').click()">
+                <i class="fas fa-file-pdf"></i>
+                <p>Klik atau drag file PDF di sini</p>
+                <span>Format: PDF | Maks: 1MB</span>
+              </div>
+              <input type="file" id="edit_fileInputPAK" accept=".pdf" style="display: none;"
+                     onchange="handleEditFileSelect(this, 'pakKonvensional')">
+              <div class="file-name" id="edit_fileNamePAK" style="display: none;"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -1264,8 +1438,13 @@
   <!-- ============================================
        PAKTI JAVASCRIPT MODULES (modular)
        ============================================ -->
-  <!-- 1. Config & Supabase init -->
+  <!-- 0. Session manager - HARUS DIMUAT PALING AWAL!
+         Cek browser baru (→ redirect ke landing page)
+         Cek session expired (idle > 1 jam → redirect ke landing page) -->
   <script src="js/config.js"></script>
+  <script src="js/session.js"></script>
+
+  <!-- 1. Config & Supabase init (config.js sudah dimuat di atas) -->
 
   <!-- 2. Utility & helper functions -->
   <script src="js/utils.js"></script>

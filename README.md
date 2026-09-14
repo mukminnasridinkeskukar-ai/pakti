@@ -221,6 +221,26 @@ Untuk form update perbaikan (cek status), edit juga array `satkerOptions` di `js
 
 ## 📋 Features
 
+### 🔒 Session & Redirect (Auto)
+
+- **Browser baru** → otomatis redirect ke `https://mukminnasri.com` dulu, baru bisa masuk platform
+- **Idle > 1 jam** → otomatis logout & redirect ke `https://mukminnasri.com`
+- **Logout manual** → reset session, saat user kembali akan dialihkan lagi ke landing page
+- Tracking aktivitas: mouse, keyboard, scroll, touch, focus tab
+- Cek session expired tiap 1 menit + saat tab mendapat fokus kembali
+
+**Konfigurasi** (di `js/config.js`):
+```javascript
+const LANDING_PAGE_URL = 'https://mukminnasri.com';  // URL landing page
+const SESSION_TIMEOUT_MS = 60 * 60 * 1000;            // 1 jam (ms)
+```
+
+**Testing**:
+- Buka aplikasi di browser baru → langsung redirect ke mukminnasri.com
+- Diamkan 1 jam → redirect otomatis
+- Untuk test cepat, ubah `SESSION_TIMEOUT_MS` jadi `30 * 1000` (30 detik)
+- Untuk reset paksa: buka DevTools Console → `localStorage.clear()` lalu refresh
+
 ### Halaman Publik (tanpa login)
 - ✅ **Dashboard Data** — statistik & grafik pengajuan
 - ✅ **Formulir Pengajuan** — form + upload 4 dokumen

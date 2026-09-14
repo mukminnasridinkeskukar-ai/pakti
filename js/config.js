@@ -24,6 +24,19 @@ const STORAGE_BUCKET = 'pakti-dokumen';
 // Konfigurasi pagination
 const ITEMS_PER_PAGE = 10;
 
+// ============================================
+// KONFIGURASI REDIRECT & SESSION
+// ============================================
+// Website tujuan redirect untuk browser baru / session expired
+const LANDING_PAGE_URL = 'https://mukminnasri.com';
+
+// Durasi session idle (1 jam = 60 menit = 3.600.000 ms)
+const SESSION_TIMEOUT_MS = 60 * 60 * 1000;
+
+// Key di localStorage untuk tracking
+const STORAGE_KEY_BROWSER_VISITED = 'pakti_browser_visited';
+const STORAGE_KEY_LAST_ACTIVITY = 'pakti_last_activity';
+
 // Inisialisasi client Supabase
 let supabaseClient = null;
 

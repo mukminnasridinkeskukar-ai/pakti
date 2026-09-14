@@ -237,18 +237,16 @@ async function handleFormSubmit(e) {
       satuanKerja: document.getElementById('satuanKerja').value,
     };
 
-    toastInfo('Menyimpan data pengajuan...');
+    // ============================================
+    // STEP 1: Upload semua file ke Supabase Storage DULU
+    // (sebelum insert DB), supaya kalau gagal upload,
+    // data tidak masuk DB setengah-setengah
+    // ============================================
+    toastInfo('Mengupload dokumen ke storage...');
 
-    // Insert ke database
-    const insertedRow = await insertPengajuan(formData);
-    if (!insertedRow || !insertedRow._id) {
-      throw new Error('Gagal menyimpan data ke database');
-    }
-
-    // Upload files
-    toastInfo('Mengupload dokumen...');
     const fileTypes = ['foto', 'skPangkat', 'skJabfung', 'pakKonvensional'];
     const uploadResults = {};
+    let uploadFailed = false;
 
     for (const fileType of fileTypes) {
       if (selectedFiles[fileType]) {
@@ -259,17 +257,51 @@ async function handleFormSubmit(e) {
             fileConfig[fileType].storagePath,
             nip
           );
-          // Update row dengan URL dokumen
-          await updateDocumentURL(insertedRow._id, fileConfig[fileType].dbField, url);
           uploadResults[fileType] = url;
+          console.log('[Submit] ✅ Uploaded', fileType, '→', url);
         } catch (uploadErr) {
-          console.error('[Upload] Error for', fileType, ':', uploadErr);
-          toastWarning(`Gagal upload ${fileConfig[fileType].name}: ${uploadErr.message}`);
+          console.error('[Submit] ❌ Upload failed for', fileType, ':', uploadErr);
+          toastError(`Gagal upload ${fileConfig[fileType].name}: ${uploadErr.message}`);
+          uploadFailed = true;
         }
       }
     }
 
-    // Update local data
+    if (uploadFailed) {
+      throw new Error(
+        'Gagal mengupload salah satu dokumen. Periksa koneksi internet dan Storage bucket di Supabase.'
+      );
+    }
+
+    // ============================================
+    // STEP 2: Insert data ke database dengan URL dokumen
+    // ============================================
+    toastInfo('Menyimpan data ke database...');
+
+    const insertedRow = await insertPengajuan(formData);
+    if (!insertedRow || !insertedRow._id) {
+      throw new Error('Gagal menyimpan data ke database (response tidak valid)');
+    }
+
+    // ============================================
+    // STEP 3: Update record dengan URL dokumen yang sudah diupload
+    // ============================================
+    for (const fileType of fileTypes) {
+      if (uploadResults[fileType]) {
+        try {
+          await updateDocumentURL(
+            insertedRow._id,
+            fileConfig[fileType].dbField,
+            uploadResults[fileType]
+          );
+        } catch (updateErr) {
+          console.error('[Submit] Gagal update URL dokumen', fileType, ':', updateErr);
+          // Tidak throw - data sudah masuk DB, URL bisa diupdate nanti
+        }
+      }
+    }
+
+    // Update local data dengan URL dokumen
     const newRow = {
       ...insertedRow,
       'Dok_Foto_4x6': uploadResults.foto || '',
@@ -293,7 +325,7 @@ async function handleFormSubmit(e) {
     });
 
     toastSuccess(
-      'Pengajuan berhasil dikirim! Semua dokumen telah diupload. Status: Menunggu proses admin.'
+      '✅ Pengajuan berhasil!\n• Data tersimpan ke database\n• 4 dokumen terupload ke storage\nStatus: Menunggu proses admin'
     );
 
     // Redirect to tracking page
