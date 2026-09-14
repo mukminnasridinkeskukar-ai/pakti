@@ -221,6 +221,56 @@ Untuk form update perbaikan (cek status), edit juga array `satkerOptions` di `js
 
 ## 📋 Features
 
+### 🆕 Pembuatan PAK Integrasi (Generate PDF)
+
+Menu khusus admin untuk generate dokumen PAK Integrasi siap printout:
+
+1. Buka menu **"Pembuatan PAK Integrasi"** di sidebar
+2. Pilih pegawai dari dropdown (otomatis dari database pengajuan)
+3. Input Angka Kredit (Lama/Baru) untuk:
+   - Pendidikan
+   - Tugas Pokok / Jabatan
+   - Pengembangan Profesi
+   - Penunjang
+4. Input Angka Kredit Minimal (Kebutuhan untuk kenaikan pangkat/jenjang)
+5. Isi data Pejabat Penilai (nama, NIP, lokasi penetapan, tanggal)
+6. Klik **"Generate PAK"** → preview dokumen muncul
+7. Klik **"Print / Save as PDF"** → dialog print browser muncul
+8. Pilih "Save as PDF" sebagai destination → simpan file PDF
+
+**Fitur:**
+- ✅ Kop surat otomatis (Pemerintah Kab. Kukar - Dinas Kesehatan)
+- ✅ Format dokumen resmi (Times New Roman, A4)
+- ✅ Auto-hitung Total Angka Kredit (Lama + Baru + Jumlah)
+- ✅ Auto-hitung Kekurangan/Kelebihan AK
+- ✅ Field Rekomendasi
+- ✅ Tanda tangan pejabat penilai
+- ✅ Print langsung dari browser (no server-side rendering)
+
+### 🆕 Upload Massal CSV
+
+Upload banyak data pengajuan sekaligus via file CSV:
+
+1. Buka **Admin Panel** → klik tombol **"Upload Massal CSV"**
+2. Download template CSV (otomatis terisi 2 contoh data)
+3. Edit CSV dengan data Anda (Excel / Google Sheets / text editor)
+4. Upload file CSV di modal → preview otomatis muncul
+5. Validasi otomatis (cek NIP 18 digit, format tanggal, email, dll.)
+6. Klik **"Upload ke Database"** → progress bar muncul
+7. Selesai → data langsung masuk ke Supabase
+
+**Format CSV (17 kolom):**
+```
+email,no_hp,nama,nip,no_karpeg,tempat_lahir,tanggal_lahir,
+pendidikan,jenis_kelamin,pangkat_gol,tmt_pangkat,
+jenis_jf,jenjang_jf,tmt_jf,masa_kerja_gol,satuan_kerja,
+status,catatan_admin
+```
+
+### 🆕 Printout Admin Data
+
+Tombol **"Printout"** di Admin Panel → print halaman tabel data (landscape A4).
+
 ### 🔒 Session & Redirect (Auto)
 
 - **Browser baru** → otomatis redirect ke `https://mukminnasri.com` dulu, baru bisa masuk platform

@@ -40,6 +40,7 @@ function navigateTo(page) {
     pakTerbit: 'Cek PAK Terbit',
     cekStatus: 'Cek Status Pengajuan',
     petunjuk: 'Petunjuk Penggunaan',
+    pembuatanPAK: 'Pembuatan PAK Integrasi',
     admin: 'Admin Panel',
   };
   const pageTitleEl = document.getElementById('pageTitle');
@@ -70,6 +71,8 @@ function navigateTo(page) {
     if (resultDiv) resultDiv.innerHTML = '';
   } else if (page === 'admin') {
     loadAdminData();
+  } else if (page === 'pembuatanPAK') {
+    if (typeof loadPembuatanPAKData === 'function') loadPembuatanPAKData();
   } else if (page === 'petunjuk') {
     if (typeof initPetunjukPage === 'function') initPetunjukPage();
   }

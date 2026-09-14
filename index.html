@@ -35,6 +35,7 @@
   <link rel="stylesheet" href="css/splash.css">
   <link rel="stylesheet" href="css/petunjuk.css">
   <link rel="stylesheet" href="css/responsive.css">
+  <link rel="stylesheet" href="css/print-pak.css">
 </head>
 <body>
   <!-- ============================================
@@ -104,7 +105,12 @@
         <div style="margin-top: 20px; padding: 12px 16px; background: #f0f9ff; border-radius: 8px; border-left: 3px solid var(--primary-blue); font-size: 0.82rem; color: var(--text-medium);">
           <strong style="color: var(--primary-blue);"><i class="fas fa-info-circle"></i> Login Default:</strong><br>
           <div style="margin-top: 8px; font-family: 'Courier New', monospace; line-height: 1.7;">
-            
+            👤 <strong>admin</strong> / <strong>paktiadmin2026</strong> <span style="color: var(--success); font-weight: 600;">→ Administrator (akses penuh)</span><br>
+            👤 <strong>dinkes</strong> / <strong>sdmk001@</strong> <span style="color: var(--text-light);">→ Dinas Kesehatan</span><br>
+            👤 <strong>puskesmassamboja</strong> / <strong>sdmk025@</strong> <span style="color: var(--text-light);">→ Puskesmas Samboja</span>
+          </div>
+          <p style="margin-top: 8px; font-size: 0.75rem; color: var(--text-light);">
+            * Login default aktif saat Supabase belum dikonfigurasi. Setelah setup Supabase & run seed.sql, gunakan credentials dari tabel <code>admin_users</code>.
           </p>
         </div>
       </div>
@@ -168,6 +174,11 @@
         </a>
 
         <div class="menu-section">Administrasi</div>
+
+        <a class="menu-item" data-page="pembuatanPAK" href="#">
+          <i class="fas fa-file-signature"></i>
+          <span>Pembuatan PAK Integrasi</span>
+        </a>
 
         <a class="menu-item" data-page="admin" href="#">
           <i class="fas fa-cog"></i>
@@ -1048,8 +1059,14 @@
                 <button class="btn btn-success btn-sm" onclick="navigateTo('formulir')" title="Tambah data baru via Formulir Pengajuan">
                   <i class="fas fa-plus"></i> Tambah Data
                 </button>
+                <button class="btn btn-primary btn-sm" onclick="openBulkUploadModal()" title="Upload massal via file CSV">
+                  <i class="fas fa-file-csv"></i> Upload Massal CSV
+                </button>
+                <button class="btn btn-warning btn-sm" onclick="printoutAdminData()" title="Print halaman ini">
+                  <i class="fas fa-print"></i> Printout
+                </button>
                 <button class="btn btn-success btn-sm btn-export" onclick="exportExcel()">
-                  <i class="fas fa-file-excel"></i> Export
+                  <i class="fas fa-file-excel"></i> Export CSV
                 </button>
                 <button class="btn btn-primary btn-sm" onclick="refreshAdmin()">
                   <i class="fas fa-sync-alt"></i> Refresh
@@ -1077,6 +1094,145 @@
             <div class="pagination-container">
               <div class="pagination-info" id="adminPaginationInfo">Menampilkan 0 - 0 dari 0 data</div>
               <div class="pagination-controls" id="adminPagination"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============================================
+             PEMBUATAN PAK INTEGRASI
+             ============================================ -->
+        <section class="page-section" id="pembuatanPAKPage">
+          <div class="filter-section">
+            <h3 style="color: var(--government-blue); margin-bottom: 16px; display: flex; align-items: center; gap: 10px;">
+              <i class="fas fa-file-signature"></i> Pembuatan PAK Integrasi
+            </h3>
+            <p style="color: var(--text-medium); font-size: 0.9rem; margin-bottom: 20px;">
+              Pilih pegawai dari database pengajuan, isi Angka Kredit, lalu generate & printout PAK Integrasi.
+            </p>
+
+            <!-- Section 1: Pilih Pegawai -->
+            <div class="pak-form-section">
+              <h4><i class="fas fa-user"></i> 1. Pilih Pegawai</h4>
+              <div class="form-group">
+                <label class="form-label">Pilih NIP / Nama Pegawai <span class="required">*</span></label>
+                <select class="form-select" id="pakSelectNIP" style="width: 100%;">
+                  <option value="">-- Pilih NIP / Nama Pegawai --</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Section 2: Input Angka Kredit -->
+            <div class="pak-form-section">
+              <h4><i class="fas fa-calculator"></i> 2. Input Angka Kredit</h4>
+              <div class="pak-form-grid">
+                <div class="form-group">
+                  <label class="form-label">AK Pendidikan (Lama)</label>
+                  <input type="text" class="form-input" id="akLamaPendidikan" placeholder="0.00" inputmode="decimal">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">AK Pendidikan (Baru)</label>
+                  <input type="text" class="form-input" id="akBaruPendidikan" placeholder="0.00" inputmode="decimal">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">AK Tugas Pokok (Lama)</label>
+                  <input type="text" class="form-input" id="akLamaTugasPokok" placeholder="0.00" inputmode="decimal">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">AK Tugas Pokok (Baru)</label>
+                  <input type="text" class="form-input" id="akBaruTugasPokok" placeholder="0.00" inputmode="decimal">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">AK Pengembangan Profesi (Lama)</label>
+                  <input type="text" class="form-input" id="akLamaPengembangan" placeholder="0.00" inputmode="decimal">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">AK Pengembangan Profesi (Baru)</label>
+                  <input type="text" class="form-input" id="akBaruPengembangan" placeholder="0.00" inputmode="decimal">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">AK Penunjang (Lama)</label>
+                  <input type="text" class="form-input" id="akLamaPenunjang" placeholder="0.00" inputmode="decimal">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">AK Penunjang (Baru)</label>
+                  <input type="text" class="form-input" id="akBaruPenunjang" placeholder="0.00" inputmode="decimal">
+                </div>
+              </div>
+
+              <h4 style="margin-top: 20px;"><i class="fas fa-bullseye"></i> Angka Kredit Minimal (Kebutuhan)</h4>
+              <div class="pak-form-grid">
+                <div class="form-group">
+                  <label class="form-label">AK Minimal Kenaikan Pangkat</label>
+                  <input type="text" class="form-input" id="akMinimalPangkat" placeholder="0.00" inputmode="decimal">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">AK Minimal Kenaikan Jenjang</label>
+                  <input type="text" class="form-input" id="akMinimalJenjang" placeholder="0.00" inputmode="decimal">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">AK Minimal Pengembangan Profesi</label>
+                  <input type="text" class="form-input" id="akMinimalPengembangan" placeholder="0.00" inputmode="decimal">
+                </div>
+              </div>
+            </div>
+
+            <!-- Section 3: Penetapan & Pejabat -->
+            <div class="pak-form-section">
+              <h4><i class="fas fa-stamp"></i> 3. Penetapan & Pejabat Penilai</h4>
+              <div class="pak-form-grid">
+                <div class="form-group">
+                  <label class="form-label">Periode Penilaian</label>
+                  <input type="text" class="form-input" id="pakPeriodePenilaian" placeholder="Contoh: 2024 - 2025">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Tanggal Penetapan</label>
+                  <input type="date" class="form-input" id="pakTanggalPenetapan">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Lokasi Penetapan</label>
+                  <input type="text" class="form-input" id="pakLokasiPenetapan" value="Tenggarong">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Nama Pejabat Penilai</label>
+                  <input type="text" class="form-input" id="pakNamaPejabat" placeholder="Contoh: dr. Martina Yulianti, Sp.PD">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">NIP Pejabat Penilai</label>
+                  <input type="text" class="form-input" id="pakNipPejabat" placeholder="18 digit NIP" maxlength="18">
+                </div>
+              </div>
+              <div class="form-group" style="margin-top: 12px;">
+                <label class="form-label">Rekomendasi (opsional)</label>
+                <textarea class="form-input" id="pakRekomendasi" rows="3" placeholder="Tuliskan rekomendasi / catatan tambahan..."></textarea>
+              </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="pak-actions">
+              <button class="btn btn-primary" onclick="generatePAKIntegrasi()">
+                <i class="fas fa-file-export"></i> Generate PAK
+              </button>
+              <button class="btn btn-success" id="pakPrintBtn" onclick="printPAKIntegrasi()" style="display: none;">
+                <i class="fas fa-print"></i> Print / Save as PDF
+              </button>
+              <button class="btn btn-warning" onclick="resetPAKForm()">
+                <i class="fas fa-redo"></i> Reset
+              </button>
+            </div>
+          </div>
+
+          <!-- Preview PAK -->
+          <div class="filter-section" style="padding: 0; overflow: hidden;">
+            <div style="background: var(--primary-light); padding: 12px 20px; border-bottom: 1px solid var(--border-color);">
+              <h3 style="color: var(--government-blue); margin: 0; display: flex; align-items: center; gap: 8px; font-size: 1rem;">
+                <i class="fas fa-file-alt"></i> Preview Dokumen PAK Integrasi
+              </h3>
+            </div>
+            <div id="pakPreview" style="padding: 20px;">
+              <p style="text-align: center; color: var(--text-light); padding: 40px;">
+                <i class="fas fa-file-alt" style="font-size: 48px; margin-bottom: 12px;"></i><br>
+                Pilih pegawai untuk generate PAK Integrasi
+              </p>
             </div>
           </div>
         </section>
@@ -1499,10 +1655,16 @@
   <!-- 16. Pagination helper -->
   <script src="js/pagination.js"></script>
 
-  <!-- 17. Main app init -->
+  <!-- 17. Bulk Upload CSV module -->
+  <script src="js/bulk-upload.js"></script>
+
+  <!-- 18. Pembuatan PAK Integrasi (generate PDF) -->
+  <script src="js/pembuatan-pak.js"></script>
+
+  <!-- 19. Main app init -->
   <script src="js/app.js"></script>
 
-  <!-- 18. Splash screen (runs last, triggers initApp on completion) -->
+  <!-- 20. Splash screen (runs last, triggers initApp on completion) -->
   <script src="js/splash.js"></script>
 </body>
 </html>
