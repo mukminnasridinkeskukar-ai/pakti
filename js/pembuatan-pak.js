@@ -164,22 +164,14 @@ function generatePAKIntegrasi() {
 }
 
 /**
- * Helper: Kop Surat (sama untuk semua dokumen)
+ * Helper: Kop Surat (pakai image asli)
+ * Image: assets/kop-surat.png (841x169 px, aspect ratio ~5:1)
  */
 function getKopSurat(instansi) {
   return `
-    <table class="kop-table">
-      <tr>
-        <td class="kop-logo"><div class="kop-emblem">⚖</div></td>
-        <td class="kop-text">
-          <div class="kop-line1">PEMERINTAH KABUPATEN KUTAI KARTANEGARA</div>
-          <div class="kop-line2">${escapeHtml(instansi || 'DINAS KESEHATAN')}</div>
-          <div class="kop-line3">Jalan Cut Nyak Dien No. 33, Tenggarong, Kutai Kartanegara 75513</div>
-          <div class="kop-line3">Telepon: (0541) 6610005 | Email: sdmkdinkeskukar2024@gmail.com</div>
-        </td>
-      </tr>
-    </table>
-    <div class="kop-line"></div>
+    <div class="kop-surat-image">
+      <img src="assets/kop-surat.png" alt="Kop Surat - Pemerintah Kabupaten Kutai Kartanegara" />
+    </div>
   `;
 }
 
