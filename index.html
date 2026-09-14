@@ -1103,12 +1103,24 @@
              ============================================ -->
         <section class="page-section" id="pembuatanPAKPage">
           <div class="filter-section">
-            <h3 style="color: var(--government-blue); margin-bottom: 16px; display: flex; align-items: center; gap: 10px;">
-              <i class="fas fa-file-signature"></i> Pembuatan PAK Integrasi
-            </h3>
-            <p style="color: var(--text-medium); font-size: 0.9rem; margin-bottom: 20px;">
-              Pilih pegawai dari database pengajuan, isi Angka Kredit, lalu generate & printout PAK Integrasi.
-            </p>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
+              <div>
+                <h3 style="color: var(--government-blue); margin: 0; display: flex; align-items: center; gap: 10px;">
+                  <i class="fas fa-file-signature"></i> Pembuatan PAK Integrasi
+                </h3>
+                <p style="color: var(--text-medium); font-size: 0.85rem; margin: 4px 0 0 0;">
+                  Data pegawai otomatis diambil dari tabel <code>pengajuan_pak</code> di Supabase
+                </p>
+              </div>
+              <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                <span id="pembuatanPAKCount" style="background: var(--primary-light); color: var(--primary-blue); padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">
+                  Memuat...
+                </span>
+                <button class="btn btn-primary btn-sm" id="pakRefreshBtn" onclick="refreshPembuatanPAKData()" title="Refresh data dari Supabase">
+                  <i class="fas fa-sync-alt"></i> Refresh Data
+                </button>
+              </div>
+            </div>
 
             <!-- Section 1: Pilih Pegawai -->
             <div class="pak-form-section">

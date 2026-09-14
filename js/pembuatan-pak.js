@@ -6,36 +6,174 @@
  *
  * PDF dibuat via browser print (window.print)
  * dengan stylesheet print khusus (css/print-pak.css)
+ *
+ * Data pegawai langsung diambil dari tabel
+ * pengajuan_pak di Supabase.
  * ============================================ */
 
 let currentPAKData = null;
 
+// Cache lokal untuk data pegawai yang sudah difetch
+let pembuatanPAKData = [];
+
 /**
  * Load halaman Pembuatan PAK Integrasi
+ * Fetch data pegawai LANGSUNG dari tabel pengajuan_pak di Supabase
  */
-function loadPembuatanPAKData() {
+async function loadPembuatanPAKData() {
   const select = document.getElementById('pakSelectNIP');
+  const preview = document.getElementById('pakPreview');
   if (!select) return;
 
-  // Populate dropdown dengan semua data pengajuan
-  const sortedData = [...allData].sort((a, b) => {
-    const namaA = (a['Nama Lengkap dengan Gelar'] || '').toLowerCase();
-    const namaB = (b['Nama Lengkap dengan Gelar'] || '').toLowerCase();
-    return namaA.localeCompare(namaB);
-  });
-
-  select.innerHTML =
-    '<option value="">-- Pilih NIP / Nama Pegawai --</option>' +
-    sortedData
-      .map((row) => {
-        const label = `${row['NIP'] || '-'} - ${row['Nama Lengkap dengan Gelar'] || '-'} (${row['Satuan Kerja'] || '-'})`;
-        return `<option value="${escapeHtml(String(row._id || ''))}">${escapeHtml(label)}</option>`;
-      })
-      .join('');
-
   // Reset preview
-  const preview = document.getElementById('pakPreview');
-  if (preview) preview.innerHTML = '<p style="text-align: center; color: var(--text-light); padding: 40px;"><i class="fas fa-file-alt" style="font-size: 48px; margin-bottom: 12px;"></i><br>Pilih pegawai untuk generate PAK Integrasi</p>';
+  if (preview) {
+    preview.innerHTML =
+      '<p style="text-align: center; color: var(--text-light); padding: 40px;">' +
+      '<i class="fas fa-file-alt" style="font-size: 48px; margin-bottom: 12px;"></i><br>' +
+      'Pilih pegawai untuk generate PAK Integrasi</p>';
+  }
+
+  // Cek apakah Supabase sudah dikonfigurasi
+  if (!isSupabaseReady()) {
+    select.innerHTML =
+      '<option value="">⚠️ Supabase belum dikonfigurasi</option>';
+    if (preview) {
+      preview.innerHTML =
+        '<div style="text-align: center; padding: 40px; color: var(--danger);">' +
+        '<i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 12px;"></i>' +
+        '<h3 style="margin-bottom: 8px;">Supabase Belum Dikonfigurasi</h3>' +
+        '<p style="color: var(--text-medium); margin-bottom: 16px;">Edit file <code>js/config.js</code> dan isi:</p>' +
+        '<p style="font-family: monospace; background: var(--light-bg); padding: 8px; border-radius: 4px; margin-bottom: 16px;">' +
+        'SUPABASE_URL = \'https://xxx.supabase.co\'<br>' +
+        'SUPABASE_ANON_KEY = \'xxx\'</p>' +
+        '<p style="color: var(--text-light); font-size: 0.85rem;">Pastikan juga tabel <code>pengajuan_pak</code> sudah dibuat via <code>supabase/schema.sql</code></p>' +
+        '</div>';
+    }
+    return;
+  }
+
+  // Show loading state di dropdown
+  select.innerHTML =
+    '<option value="">⏳ Memuat data pegawai dari Supabase...</option>';
+
+  // Tampilkan info jumlah data (akan diupdate setelah fetch)
+  updatePembuatanPAKCount('Memuat...');
+
+  try {
+    // Fetch LANGSUNG dari tabel pengajuan_pak di Supabase
+    const data = await fetchAllPengajuan();
+
+    if (!data || data.length === 0) {
+      pembuatanPAKData = [];
+      select.innerHTML = '<option value="">-- Belum ada data pegawai --</option>';
+
+      if (preview) {
+        preview.innerHTML =
+          '<div style="text-align: center; padding: 40px; color: var(--warning);">' +
+          '<i class="fas fa-inbox" style="font-size: 48px; margin-bottom: 12px;"></i>' +
+          '<h3 style="margin-bottom: 8px;">Belum Ada Data Pegawai</h3>' +
+          '<p style="color: var(--text-medium); margin-bottom: 16px;">' +
+          'Tidak ada data di tabel <code>pengajuan_pak</code>.<br>' +
+          'Silakan tambah data pegawai terlebih dahulu via:' +
+          '</p>' +
+          '<div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">' +
+          '<button class="btn btn-primary btn-sm" onclick="navigateTo(\'formulir\')"><i class="fas fa-plus"></i> Formulir Pengajuan</button>' +
+          '<button class="btn btn-success btn-sm" onclick="navigateTo(\'admin\')"><i class="fas fa-file-csv"></i> Upload Massal CSV</button>' +
+          '</div>' +
+          '</div>';
+      }
+      updatePembuatanPAKCount('0 data');
+      toastInfo('Belum ada data pegawai di database');
+      return;
+    }
+
+    // Sort by name ascending
+    pembuatanPAKData = [...data].sort((a, b) => {
+      const namaA = (a['Nama Lengkap dengan Gelar'] || '').toLowerCase();
+      const namaB = (b['Nama Lengkap dengan Gelar'] || '').toLowerCase();
+      return namaA.localeCompare(namaB);
+    });
+
+    // Populate dropdown
+    select.innerHTML =
+      '<option value="">-- Pilih NIP / Nama Pegawai (' +
+      pembuatanPAKData.length +
+      ' data) --</option>' +
+      pembuatanPAKData
+        .map((row) => {
+          const nip = row['NIP'] || '-';
+          const nama = row['Nama Lengkap dengan Gelar'] || '-';
+          const satker = row['Satuan Kerja'] || '-';
+          const status = row['Status'] || 'Menunggu';
+          const label = `${nip} - ${nama} (${satker}) [${status}]`;
+          return `<option value="${escapeHtml(String(row._id || ''))}">${escapeHtml(label)}</option>`;
+        })
+        .join('');
+
+    // Update count badge
+    updatePembuatanPAKCount(pembuatanPAKData.length + ' data pegawai');
+
+    // Sinkronkan juga ke allData (untuk konsistensi dengan modul lain)
+    allData = [...data];
+    if (typeof filteredData !== 'undefined') {
+      filteredData = [...allData];
+    }
+
+    console.log('[Pembuatan PAK] ✅ Loaded', data.length, 'pegawai dari Supabase');
+    toastSuccess(`Berhasil memuat ${data.length} data pegawai`);
+  } catch (error) {
+    console.error('[Pembuatan PAK] Load error:', error);
+    select.innerHTML = '<option value="">❌ Gagal memuat data</option>';
+
+    if (preview) {
+      preview.innerHTML =
+        '<div style="text-align: center; padding: 40px; color: var(--danger);">' +
+        '<i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 12px;"></i>' +
+        '<h3 style="margin-bottom: 8px;">Gagal Memuat Data</h3>' +
+        '<p style="color: var(--text-medium); margin-bottom: 16px;">' +
+        escapeHtml(error.message || 'Unknown error') +
+        '</p>' +
+        '<div style="background: #fef2f2; padding: 12px; border-radius: 8px; text-align: left; font-size: 0.85rem; max-width: 500px; margin: 0 auto;">' +
+        '<strong>Possible causes:</strong>' +
+        '<ul style="margin: 8px 0 0 20px; line-height: 1.8;">' +
+        '<li>Supabase URL / anon key salah di <code>js/config.js</code></li>' +
+        '<li>Tabel <code>pengajuan_pak</code> belum dibuat (run <code>schema.sql</code>)</li>' +
+        '<li>RLS policies belum di-setup (run <code>policies.sql</code>)</li>' +
+        '<li>Koneksi internet bermasalah</li>' +
+        '</ul></div>' +
+        '<button class="btn btn-primary btn-sm" style="margin-top: 16px;" onclick="loadPembuatanPAKData()">' +
+        '<i class="fas fa-sync-alt"></i> Coba Lagi</button>' +
+        '</div>';
+    }
+    updatePembuatanPAKCount('Error');
+    toastError('Gagal memuat data: ' + (error.message || ''));
+  }
+}
+
+/**
+ * Update badge jumlah data di header halaman
+ */
+function updatePembuatanPAKCount(text) {
+  const countEl = document.getElementById('pembuatanPAKCount');
+  if (countEl) countEl.textContent = text;
+}
+
+/**
+ * Refresh data pegawai dari Supabase
+ */
+async function refreshPembuatanPAKData() {
+  const btn = document.getElementById('pakRefreshBtn');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memuat...';
+  }
+
+  await loadPembuatanPAKData();
+
+  if (btn) {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh Data';
+  }
 }
 
 /**
@@ -48,15 +186,22 @@ function generatePAKIntegrasi() {
     return;
   }
 
-  const row = allData.find((r) => String(r._id) === String(select.value));
+  // Cari di pembuatanPAKData (data yang sudah difetch)
+  let row = pembuatanPAKData.find((r) => String(r._id) === String(select.value));
+
+  // Fallback ke allData jika tidak ketemu
   if (!row) {
-    toastError('Data tidak ditemukan!');
+    row = allData.find((r) => String(r._id) === String(select.value));
+  }
+
+  if (!row) {
+    toastError('Data pegawai tidak ditemukan! Coba refresh data.');
     return;
   }
 
   currentPAKData = row;
 
-  // Ambil nilai input angka kredit (jika diisi)
+  // Ambil nilai input angka kredit
   const getNum = (id) => {
     const el = document.getElementById(id);
     if (!el || !el.value) return 0;
@@ -89,9 +234,6 @@ function generatePAKIntegrasi() {
   const totalBaru = akBaruPendidikan + akBaruTugasPokok + akBaruPengembangan + akBaruPenunjang;
   const totalJumlah = totalLama + totalBaru;
 
-  // Status PAK (Terbit / Belum)
-  const isTerbit = row['Status'] === 'Terbit';
-
   // Generate HTML untuk print
   const html = generatePAKHTML(
     row,
@@ -121,7 +263,6 @@ function generatePAKIntegrasi() {
       namaPejabat,
       nipPejabat,
       rekomendasi,
-      isTerbit,
     }
   );
 
@@ -341,7 +482,6 @@ function printPAKIntegrasi() {
   }
 
   // Clone PAK document ke body untuk print
-  // supaya tidak terkena CSS admin panel yang menyembunyikan elemen
   const printWrapper = document.createElement('div');
   printWrapper.id = 'pakPrintWrapper';
   printWrapper.className = 'pak-print-wrapper';
@@ -354,11 +494,8 @@ function printPAKIntegrasi() {
   document.body.appendChild(printWrapper);
   document.body.classList.add('printing-pak');
 
-  // Tunggu render, lalu print
   setTimeout(() => {
     window.print();
-
-    // Cleanup setelah print dialog selesai
     setTimeout(() => {
       document.body.classList.remove('printing-pak');
       const w = document.getElementById('pakPrintWrapper');
@@ -389,7 +526,12 @@ function resetPAKForm() {
   if (select) select.value = '';
 
   const preview = document.getElementById('pakPreview');
-  if (preview) preview.innerHTML = '<p style="text-align: center; color: var(--text-light); padding: 40px;"><i class="fas fa-file-alt" style="font-size: 48px; margin-bottom: 12px;"></i><br>Pilih pegawai untuk generate PAK Integrasi</p>';
+  if (preview) {
+    preview.innerHTML =
+      '<p style="text-align: center; color: var(--text-light); padding: 40px;">' +
+      '<i class="fas fa-file-alt" style="font-size: 48px; margin-bottom: 12px;"></i><br>' +
+      'Pilih pegawai untuk generate PAK Integrasi</p>';
+  }
 
   const printBtn = document.getElementById('pakPrintBtn');
   if (printBtn) printBtn.style.display = 'none';
@@ -402,7 +544,6 @@ function resetPAKForm() {
  * Printout seluruh data admin (print halaman)
  */
 function printoutAdminData() {
-  // Print halaman dengan filter print css
   document.body.classList.add('printing-admin');
   setTimeout(() => {
     window.print();
