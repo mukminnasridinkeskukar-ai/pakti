@@ -19,20 +19,35 @@
   if (window.__paktiSessionManager) return;
   window.__paktiSessionManager = true;
 
+  // ============================================
+  // FALLBACK VALUES (jika config.js belum dimuat)
+  // ============================================
+  // Penting: pakai typeof check supaya tidak throw ReferenceError
+  // jika config.js gagal load atau dibuka via file://
+  var FALLBACK_LANDING_URL = 'https://mukminnasri.com';
+  var FALLBACK_SESSION_TIMEOUT = 60 * 60 * 1000; // 1 jam
+
+  var LANDING_URL = (typeof LANDING_PAGE_URL !== 'undefined') ? LANDING_PAGE_URL : FALLBACK_LANDING_URL;
+  var SESSION_TIMEOUT = (typeof SESSION_TIMEOUT_MS !== 'undefined') ? SESSION_TIMEOUT_MS : FALLBACK_SESSION_TIMEOUT;
+  var KEY_VISITED = (typeof STORAGE_KEY_BROWSER_VISITED !== 'undefined') ? STORAGE_KEY_BROWSER_VISITED : 'pakti_browser_visited';
+  var KEY_ACTIVITY = (typeof STORAGE_KEY_LAST_ACTIVITY !== 'undefined') ? STORAGE_KEY_LAST_ACTIVITY : 'pakti_last_activity';
+
+  console.log('[Session] Config loaded:', {
+    landingUrl: LANDING_URL,
+    sessionTimeoutMs: SESSION_TIMEOUT,
+    sessionTimeoutMin: SESSION_TIMEOUT / 60000,
+  });
+
   let idleTimer = null;
   let activityThrottleTimer = null;
 
   /**
    * Cek apakah ini kunjungan pertama di browser ini
-   * (flag disimpan di localStorage, tidak di sessionStorage,
-   * supaya bertahan walaupun tab ditutup).
    */
   function isFirstVisit() {
     try {
-      return localStorage.getItem(STORAGE_KEY_BROWSER_VISITED) !== 'true';
+      return localStorage.getItem(KEY_VISITED) !== 'true';
     } catch (e) {
-      // LocalStorage mungkin diblokir (incognito / privacy mode)
-      // Fallback: anggap true (treat as first visit)
       return true;
     }
   }
@@ -42,7 +57,7 @@
    */
   function markVisited() {
     try {
-      localStorage.setItem(STORAGE_KEY_BROWSER_VISITED, 'true');
+      localStorage.setItem(KEY_VISITED, 'true');
     } catch (e) {
       console.warn('[Session] Tidak bisa set localStorage:', e);
     }
@@ -53,21 +68,21 @@
    */
   function updateLastActivity() {
     try {
-      localStorage.setItem(STORAGE_KEY_LAST_ACTIVITY, String(Date.now()));
+      localStorage.setItem(KEY_ACTIVITY, String(Date.now()));
     } catch (e) {
       // ignore
     }
   }
 
   /**
-   * Cek apakah session sudah expired (idle > SESSION_TIMEOUT_MS)
+   * Cek apakah session sudah expired (idle > SESSION_TIMEOUT)
    */
   function isSessionExpired() {
     try {
-      const last = parseInt(localStorage.getItem(STORAGE_KEY_LAST_ACTIVITY) || '0', 10);
-      if (!last) return false; // belum ada record aktivitas
+      const last = parseInt(localStorage.getItem(KEY_ACTIVITY) || '0', 10);
+      if (!last) return false;
       const elapsed = Date.now() - last;
-      return elapsed > SESSION_TIMEOUT_MS;
+      return elapsed > SESSION_TIMEOUT;
     } catch (e) {
       return false;
     }
@@ -79,19 +94,14 @@
   function redirectToLanding(reason) {
     console.log('[Session] Redirect ke landing page. Reason:', reason);
     try {
-      // Hapus flag visited supaya saat user kembali, dia dialihkan lagi
-      // ke landing page (memenuhi syarat "setiap masuk kembali")
-      localStorage.removeItem(STORAGE_KEY_BROWSER_VISITED);
-      localStorage.removeItem(STORAGE_KEY_LAST_ACTIVITY);
-
-      // Juga clear session admin
+      localStorage.removeItem(KEY_VISITED);
+      localStorage.removeItem(KEY_ACTIVITY);
       sessionStorage.removeItem('adminToken');
       sessionStorage.removeItem('adminUser');
     } catch (e) {
       // ignore
     }
 
-    // Tampilkan notifikasi sebentar sebelum redirect
     if (typeof showToast === 'function') {
       try {
         showToast(
@@ -103,22 +113,19 @@
       } catch (e) {}
     }
 
-    // Delay 800ms supaya toast sempat tampil
     setTimeout(function () {
-      window.location.href = LANDING_PAGE_URL;
+      window.location.href = LANDING_URL;
     }, 800);
   }
 
   /**
-   * Setup activity listeners (mouse, keyboard, scroll, touch)
-   * Throttled untuk performa
+   * Setup activity listeners
    */
   function setupActivityListeners() {
     const events = ['mousedown', 'keydown', 'scroll', 'touchstart', 'click'];
 
     events.forEach(function (eventName) {
       window.addEventListener(eventName, function () {
-        // Throttle: update paling tidak setiap 30 detik
         if (activityThrottleTimer) return;
         activityThrottleTimer = setTimeout(function () {
           updateLastActivity();
@@ -127,16 +134,13 @@
       }, { passive: true });
     });
 
-    // Update saat window dapat fokus kembali
     window.addEventListener('focus', function () {
       updateLastActivity();
-      // Cek apakah selama tab inactive, session sudah expired
       if (isSessionExpired()) {
         redirectToLanding('session_expired');
       }
     });
 
-    // Update saat visibility berubah (user kembali ke tab)
     document.addEventListener('visibilitychange', function () {
       if (!document.hidden) {
         if (isSessionExpired()) {
@@ -149,7 +153,7 @@
   }
 
   /**
-   * Mulai idle timer - cek setiap 1 menit apakah session expired
+   * Mulai idle timer - cek setiap 1 menit
    */
   function startIdleCheck() {
     if (idleTimer) clearInterval(idleTimer);
@@ -157,32 +161,23 @@
       if (isSessionExpired()) {
         redirectToLanding('session_expired');
       }
-    }, 60000); // cek tiap 1 menit
+    }, 60000);
   }
 
   /**
    * Initialize session manager
-   * Dipanggil SANGAT AWAL, sebelum splash & app init
    */
   function initSessionManager() {
-    // 1. Cek apakah browser baru (belum pernah visit)
+    // 1. Cek apakah browser baru
     if (isFirstVisit()) {
-      // Tandai sudah visit dulu (supaya setelah redirect dari landing page, tidak loop)
       markVisited();
       updateLastActivity();
-
-      // Redirect ke landing page
-      console.log('[Session] Browser baru terdeteksi → redirect ke', LANDING_PAGE_URL);
-
-      // PENTING: Karena ini first visit, redirect ke landing page.
-      // User akan kembali ke PAKTI setelah mengunjungi landing page.
-      // Saat dia kembali, isFirstVisit() akan return false
-      // (karena kita sudah markVisited() di atas).
-      window.location.href = LANDING_PAGE_URL;
+      console.log('[Session] Browser baru terdeteksi → redirect ke', LANDING_URL);
+      window.location.href = LANDING_URL;
       return;
     }
 
-    // 2. Cek apakah session sudah expired (idle > 1 jam)
+    // 2. Cek apakah session expired
     if (isSessionExpired()) {
       redirectToLanding('session_expired');
       return;
@@ -195,17 +190,24 @@
     setupActivityListeners();
     startIdleCheck();
 
-    console.log('[Session] ✅ Session manager aktif. Idle timeout:', SESSION_TIMEOUT_MS / 60000, 'menit');
+    console.log('[Session] ✅ Session manager aktif. Idle timeout:', SESSION_TIMEOUT / 60000, 'menit');
   }
 
-  // Expose untuk debugging
+  // Expose untuk debugging (pakai var lokal, bukan referensi langsung)
   window.PAKTI_SESSION = {
     isFirstVisit: isFirstVisit,
     isSessionExpired: isSessionExpired,
     updateLastActivity: updateLastActivity,
     redirectToLanding: redirectToLanding,
-    LANDING_PAGE_URL: LANDING_PAGE_URL,
-    SESSION_TIMEOUT_MS: SESSION_TIMEOUT_MS,
+    LANDING_URL: LANDING_URL,
+    SESSION_TIMEOUT_MS: SESSION_TIMEOUT,
+    reset: function () {
+      try {
+        localStorage.removeItem(KEY_VISITED);
+        localStorage.removeItem(KEY_ACTIVITY);
+        console.log('[Session] Reset OK. Reload halaman untuk trigger redirect.');
+      } catch (e) {}
+    },
   };
 
   // Auto-init saat DOM ready (atau langsung jika sudah ready)
