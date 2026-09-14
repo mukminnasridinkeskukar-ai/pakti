@@ -134,19 +134,32 @@ function generatePAKIntegrasi() {
 
   currentPAKData = row;
 
-  // Generate 4 dokumen
+  // Generate 4 dokumen - setiap dokumen dibungkus .pak-page dengan data-orientation
   const doc1 = generateKonvensionalHTML(row);
   const doc2 = generateIntegrasiHTML(row);
   const doc3 = generateKebutuhanAKHTML(row);
   const doc4 = generatePAKIntegrasiHTML(row);
 
   // Gabung jadi 1 print area dengan page-break
+  // Setiap .pak-page punya page indicator & orientation attribute
   const html = `
     <div class="pak-print-pages" id="pakPrintArea">
-      <div class="pak-page">${doc1}</div>
-      <div class="pak-page">${doc2}</div>
-      <div class="pak-page">${doc3}</div>
-      <div class="pak-page">${doc4}</div>
+      <div class="pak-page" data-orientation="portrait" data-page-num="1">
+        <div class="page-indicator">Halaman 1 / 4 — Konvensional</div>
+        <div class="pak-content">${doc1}</div>
+      </div>
+      <div class="pak-page" data-orientation="portrait" data-page-num="2">
+        <div class="page-indicator">Halaman 2 / 4 — Integrasi</div>
+        <div class="pak-content">${doc2}</div>
+      </div>
+      <div class="pak-page" data-orientation="portrait" data-page-num="3">
+        <div class="page-indicator">Halaman 3 / 4 — Kebutuhan AK</div>
+        <div class="pak-content">${doc3}</div>
+      </div>
+      <div class="pak-page" data-orientation="portrait" data-page-num="4">
+        <div class="page-indicator">Halaman 4 / 4 — PAK Integrasi</div>
+        <div class="pak-content">${doc4}</div>
+      </div>
     </div>
   `;
 
@@ -156,11 +169,260 @@ function generatePAKIntegrasi() {
   const printBtn = document.getElementById('pakPrintBtn');
   if (printBtn) printBtn.style.display = 'inline-flex';
 
-  toastSuccess('4 dokumen PAK berhasil di-generate. Klik Print untuk mencetak semua jadi 1 PDF.');
+  const previewBtn = document.getElementById('pakPreviewBtn');
+  if (previewBtn) previewBtn.style.display = 'inline-flex';
+
+  // Auto-fit setiap halaman agar konten muat
+  setTimeout(() => {
+    autoFitAllPages();
+    toastSuccess('4 dokumen PAK berhasil di-generate. Klik Print Preview untuk lihat hasil, lalu Print untuk cetak/PDF.');
+  }, 100);
 
   if (preview) {
     preview.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
+}
+
+/* ============================================
+ * AUTO-FIT: Skala konten agar muat dalam 1 halaman A4
+ * Tanpa overflow:hidden - menggunakan transform scale
+ * ============================================ */
+function autoFitAllPages() {
+  const pages = document.querySelectorAll('#pakPreview .pak-page');
+  pages.forEach((page) => {
+    autoFitPage(page);
+  });
+}
+
+function autoFitPage(pageEl) {
+  if (!pageEl) return;
+
+  const content = pageEl.querySelector('.pak-content');
+  if (!content) return;
+
+  // Reset transform dulu
+  content.style.transform = 'none';
+  content.style.transformOrigin = 'top left';
+
+  // Beri delay supaya browser sempat render
+  setTimeout(() => {
+    const pageHeight = pageEl.clientHeight;
+    const pageWidth = pageEl.clientWidth;
+    const contentHeight = content.scrollHeight;
+    const contentWidth = content.scrollWidth;
+
+    // Hitung scale factor - pakai 95% dari ruang tersedia
+    const paddingAllowance = 0.97; // 3% buffer
+    const scaleByHeight = pageHeight / contentHeight;
+    const scaleByWidth = pageWidth / contentWidth;
+    let scale = Math.min(scaleByHeight, scaleByWidth, 1);
+
+    // Jika content melebihi halaman, scale down
+    if (scale < 1) {
+      scale = scale * paddingAllowance;
+      content.style.transform = `scale(${scale})`;
+      content.style.transformOrigin = 'top left';
+      // Set width agar sesuai dengan skala
+      content.style.width = `${100 / scale}%`;
+      console.log(`[AutoFit] Page scaled to ${(scale * 100).toFixed(1)}% (content: ${contentHeight}px, page: ${pageHeight}px)`);
+    } else {
+      // Sudah muat, tidak perlu scale
+      content.style.transform = 'none';
+      content.style.width = '100%';
+    }
+  }, 50);
+}
+
+/* ============================================
+ * VALIDASI sebelum print
+ * ============================================ */
+function validateBeforePrint() {
+  const errors = [];
+  const warnings = [];
+
+  // Cek apakah sudah di-generate
+  const printArea = document.getElementById('pakPrintArea');
+  if (!printArea) {
+    errors.push('Dokumen belum di-generate. Klik "Generate 4 Dokumen PAK" terlebih dahulu.');
+    return { valid: false, errors, warnings };
+  }
+
+  // Cek jumlah halaman = 4
+  const pages = printArea.querySelectorAll('.pak-page');
+  if (pages.length !== 4) {
+    errors.push(`Jumlah halaman harus 4, saat ini: ${pages.length}`);
+  }
+
+  // Cek setiap halaman punya konten
+  pages.forEach((page, idx) => {
+    const content = page.querySelector('.pak-content');
+    if (!content || content.innerHTML.trim() === '') {
+      errors.push(`Halaman ${idx + 1} kosong`);
+    } else {
+      // Cek apakah ada tabel terpotong (scrollHeight > clientHeight setelah auto-fit)
+      const tables = page.querySelectorAll('.pak-table');
+      tables.forEach((tbl, tIdx) => {
+        if (tbl.scrollHeight > page.clientHeight) {
+          warnings.push(`Halaman ${idx + 1} - tabel ${tIdx + 1} mungkin terlalu panjang, akan di-scale otomatis`);
+        }
+      });
+    }
+  });
+
+  // Cek data pegawai
+  if (!currentPAKData) {
+    errors.push('Data pegawai belum dipilih');
+  } else {
+    if (!currentPAKData['NIP']) warnings.push('NIP pegawai kosong');
+    if (!currentPAKData['Nama Lengkap dengan Gelar']) warnings.push('Nama pegawai kosong');
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+    warnings,
+  };
+}
+
+/* ============================================
+ * PRINT PREVIEW MODAL
+ * ============================================ */
+let currentPreviewPage = 1;
+const TOTAL_PAK_PAGES = 4;
+const PAGE_TITLES = [
+  'Konvensional',
+  'Integrasi',
+  'Kebutuhan AK',
+  'PAK Integrasi',
+];
+
+function openPrintPreview() {
+  // Validasi dulu
+  const validation = validateBeforePrint();
+  if (!validation.valid) {
+    toastError('Tidak bisa print: ' + validation.errors[0]);
+    return;
+  }
+
+  // Tampilkan warning jika ada
+  if (validation.warnings.length > 0) {
+    console.warn('[Print Preview] Warnings:', validation.warnings);
+  }
+
+  // Buat modal preview
+  let modal = document.getElementById('printPreviewModal');
+  if (modal) modal.remove();
+
+  modal = document.createElement('div');
+  modal.id = 'printPreviewModal';
+  modal.className = 'print-preview-modal active';
+
+  // Clone dokumen dari preview ke modal
+  const printArea = document.getElementById('pakPrintArea');
+  const clonedContent = printArea ? printArea.innerHTML : '<p>Error: dokumen belum di-generate</p>';
+
+  modal.innerHTML = `
+    <div class="print-preview-header">
+      <h3><i class="fas fa-print"></i> Print Preview — PAK Integrasi (4 Halaman)</h3>
+      <div class="print-preview-nav">
+        <button id="prevPageBtn" onclick="navigatePreviewPage(-1)" title="Halaman sebelumnya">
+          <i class="fas fa-chevron-left"></i> Prev
+        </button>
+        <span class="print-preview-page-info" id="previewPageInfo">1 / 4</span>
+        <button id="nextPageBtn" onclick="navigatePreviewPage(1)" title="Halaman berikutnya">
+          Next <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+      <div class="print-preview-actions">
+        <button class="btn-print" onclick="confirmPrintFromPreview()">
+          <i class="fas fa-print"></i> Print / Save as PDF
+        </button>
+        <button class="btn-close" onclick="closePrintPreview()">
+          <i class="fas fa-times"></i> Tutup
+        </button>
+      </div>
+    </div>
+    <div class="print-preview-body">
+      ${clonedContent}
+    </div>
+    <div class="print-preview-validation ${validation.warnings.length === 0 ? 'valid' : ''}">
+      <i class="fas fa-${validation.warnings.length === 0 ? 'check-circle' : 'info-circle'}"></i>
+      ${validation.warnings.length === 0
+        ? '<strong>Siap dicetak:</strong> 4 halaman A4, semua data lengkap.'
+        : `<strong>Catatan:</strong> ${validation.warnings.length} hal yang perlu perhatian (lihat console). Sistem akan auto-scale konten agar muat.`
+      }
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  // Setup: ambil semua .pak-page di modal, tampilkan hanya 1
+  const modalPages = modal.querySelectorAll('.pak-page');
+  modalPages.forEach((page, idx) => {
+    page.classList.add('print-preview-page-container');
+    page.classList.toggle('active', idx === 0);
+  });
+
+  // Hilangkan page indicator default (yg di luar)
+  modal.querySelectorAll('.page-indicator').forEach((el) => {
+    el.style.display = 'none';
+  });
+
+  currentPreviewPage = 1;
+  updatePreviewPageInfo();
+
+  // Re-apply auto-fit untuk pages di modal
+  setTimeout(() => {
+    const modalPageEls = modal.querySelectorAll('.pak-page');
+    modalPageEls.forEach((p) => autoFitPage(p));
+  }, 100);
+}
+
+function navigatePreviewPage(direction) {
+  const newPage = currentPreviewPage + direction;
+  if (newPage < 1 || newPage > TOTAL_PAK_PAGES) return;
+
+  currentPreviewPage = newPage;
+  updatePreviewPageInfo();
+
+  // Update visible page
+  const modal = document.getElementById('printPreviewModal');
+  if (!modal) return;
+
+  const pages = modal.querySelectorAll('.pak-page');
+  pages.forEach((page, idx) => {
+    page.classList.toggle('active', idx === currentPreviewPage - 1);
+  });
+
+  // Scroll ke atas
+  const body = modal.querySelector('.print-preview-body');
+  if (body) body.scrollTop = 0;
+}
+
+function updatePreviewPageInfo() {
+  const info = document.getElementById('previewPageInfo');
+  if (info) {
+    info.textContent = `${currentPreviewPage} / ${TOTAL_PAK_PAGES} — ${PAGE_TITLES[currentPreviewPage - 1] || ''}`;
+  }
+
+  // Update prev/next button state
+  const prevBtn = document.getElementById('prevPageBtn');
+  const nextBtn = document.getElementById('nextPageBtn');
+  if (prevBtn) prevBtn.disabled = currentPreviewPage === 1;
+  if (nextBtn) nextBtn.disabled = currentPreviewPage === TOTAL_PAK_PAGES;
+}
+
+function closePrintPreview() {
+  const modal = document.getElementById('printPreviewModal');
+  if (modal) modal.remove();
+}
+
+function confirmPrintFromPreview() {
+  closePrintPreview();
+  // Beri delay sedikit supaya modal hilang dulu
+  setTimeout(() => {
+    printPAKIntegrasi();
+  }, 200);
 }
 
 /**
@@ -463,31 +725,53 @@ function generatePAKIntegrasiHTML(row) {
  * PRINT - cetak 4 dokumen jadi 1 PDF
  * ============================================ */
 function printPAKIntegrasi() {
+  // 1. Validasi sebelum print
+  const validation = validateBeforePrint();
+  if (!validation.valid) {
+    toastError('Tidak bisa print: ' + validation.errors[0]);
+    return;
+  }
+
+  // 2. Tampilkan warning jika ada
+  if (validation.warnings.length > 0) {
+    console.warn('[Print] Warnings:', validation.warnings);
+  }
+
+  // 3. Ambil print area
   const printArea = document.getElementById('pakPrintArea');
   if (!printArea) {
     toastWarning('Generate PAK terlebih dahulu!');
     return;
   }
 
+  // 4. Re-apply auto-fit untuk memastikan konten muat
+  const pages = printArea.querySelectorAll('.pak-page');
+  pages.forEach((p) => autoFitPage(p));
+
+  // 5. Clone ke wrapper print
   const printWrapper = document.createElement('div');
   printWrapper.id = 'pakPrintWrapper';
   printWrapper.className = 'pak-print-wrapper';
   printWrapper.innerHTML = printArea.innerHTML;
 
+  // Hapus wrapper lama jika ada
   const oldWrapper = document.getElementById('pakPrintWrapper');
   if (oldWrapper) oldWrapper.remove();
 
   document.body.appendChild(printWrapper);
   document.body.classList.add('printing-pak');
 
+  // 6. Beri delay untuk render sebelum print
   setTimeout(() => {
     window.print();
+
+    // 7. Cleanup setelah print dialog selesai
     setTimeout(() => {
       document.body.classList.remove('printing-pak');
       const w = document.getElementById('pakPrintWrapper');
       if (w) w.remove();
     }, 500);
-  }, 300);
+  }, 400);
 }
 
 function resetPAKForm() {
@@ -504,6 +788,9 @@ function resetPAKForm() {
 
   const printBtn = document.getElementById('pakPrintBtn');
   if (printBtn) printBtn.style.display = 'none';
+
+  const previewBtn = document.getElementById('pakPreviewBtn');
+  if (previewBtn) previewBtn.style.display = 'none';
 
   currentPAKData = null;
   toastInfo('Form direset');
