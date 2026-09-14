@@ -13,8 +13,8 @@
  * 5. Copy "anon public" key → isi SUPABASE_ANON_KEY
  * ============================================ */
 
-const SUPABASE_URL = 'https://YOUR_PROJECT_REF.supabase.co';
-const SUPABASE_ANON_KEY = 'YOUR_ANON_PUBLIC_KEY_HERE';
+const SUPABASE_URL = 'https://krnrxdlgbntfbhdsihjo.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtybnJ4ZGxnYm50ZmJoZHNpaGpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkzODI5OTYsImV4cCI6MjEwNDk1ODk5Nn0.dfUccHu6elIiFa1E4QNYbRxoQbZm-AsAttHmY614DEA';
 
 // Nama tabel di Supabase
 const TABLE_PENGAJUAN = 'pengajuan_pak';
