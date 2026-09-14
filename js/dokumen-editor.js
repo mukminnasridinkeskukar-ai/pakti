@@ -74,6 +74,9 @@ async function openDocumentEditor(pakData) {
           <button class="editor-btn" onclick="openVersionHistory()" title="Riwayat Versi">
             <i class="fas fa-history"></i> <span>Versi</span>
           </button>
+          <button class="editor-btn btn-primary" onclick="saveDokumenNow(false)" title="Simpan dokumen ke database" style="background: var(--success); color: white;">
+            <i class="fas fa-save"></i> <span>Simpan</span>
+          </button>
           <button class="editor-btn btn-success" onclick="exportDokumenPDF()" title="Export PDF">
             <i class="fas fa-file-pdf"></i> <span>PDF</span>
           </button>
@@ -713,33 +716,71 @@ function applyPengaturanHalaman() {
     pageContainer.classList.add('has-margins');
   }
 
-  // Update content style di TinyMCE
-  if (editorInstance) {
-    const newStyle = `
-      body {
-        font-family: 'Times New Roman', Times, serif;
-        font-size: 12pt;
-        line-height: ${editorPengaturanHalaman.lineHeight};
-        margin: 0;
-        padding: 0;
-      }
-      p {
-        margin: 0 0 ${editorPengaturanHalaman.paragraphSpacing}pt 0;
-        line-height: ${editorPengaturanHalaman.lineHeight};
-      }
-      table { border-collapse: collapse; width: 100%; }
-      td, th { border: 1px solid #000; padding: 4px 6px; }
-    `;
-    editorInstance.dom.removeStyle(editorInstance.getBody());
-    const styleEl = editorInstance.getDoc().createElement('style');
-    styleEl.innerHTML = newStyle;
-    editorInstance.getDoc().head.appendChild(styleEl);
+  // Update content style di TinyMCE (cara yang benar)
+  // Guard: cek editorInstance sudah siap
+  if (!editorInstance || !editorInstance.getBody) {
+    console.warn('[Editor] Editor belum siap, pengaturan disimpan tapi belum diterapkan');
+    toastSuccess('Pengaturan disimpan! Akan diterapkan saat editor siap.');
+    closeEditorSettings();
+    return;
+  }
+
+  try {
+    const p = editorPengaturanHalaman;
+    const body = editorInstance.getBody();
+
+    if (body) {
+      // Update inline style body langsung
+      body.style.fontFamily = "'Times New Roman', Times, serif";
+      body.style.fontSize = '12pt';
+      body.style.lineHeight = String(p.lineHeight);
+      body.style.margin = '0';
+      body.style.padding = `${p.marginTop}mm ${p.marginRight}mm ${p.marginBottom}mm ${p.marginLeft}mm`;
+      body.style.boxSizing = 'border-box';
+      body.style.color = '#000';
+      body.style.background = '#fff';
+    }
+
+    // Update paragraf style
+    const paragraphs = editorInstance.dom.select('p');
+    if (paragraphs && paragraphs.length > 0) {
+      paragraphs.forEach((pEl) => {
+        editorInstance.dom.setStyle(pEl, 'margin-bottom', p.paragraphSpacing + 'pt');
+        editorInstance.dom.setStyle(pEl, 'line-height', String(p.lineHeight));
+      });
+    }
+
+    // Update tabel style
+    const tables = editorInstance.dom.select('table');
+    if (tables && tables.length > 0) {
+      tables.forEach((tbl) => {
+        editorInstance.dom.setStyle(tbl, 'border-collapse', 'collapse');
+        editorInstance.dom.setStyle(tbl, 'width', '100%');
+        editorInstance.dom.setStyle(tbl, 'margin', '6pt 0');
+      });
+    }
+
+    const cells = editorInstance.dom.select('td, th');
+    if (cells && cells.length > 0) {
+      cells.forEach((cell) => {
+        editorInstance.dom.setStyle(cell, 'border', '1px solid #000');
+        editorInstance.dom.setStyle(cell, 'padding', '4px 6px');
+        editorInstance.dom.setStyle(cell, 'vertical-align', 'top');
+        editorInstance.dom.setStyle(cell, 'line-height', '1.3');
+      });
+    }
+
+    console.log('[Editor] Pengaturan halaman diterapkan:', p);
+  } catch (err) {
+    console.error('[Editor] Gagal apply pengaturan:', err);
+    toastWarning('Pengaturan disimpan, tapi gagal diterapkan ke editor: ' + err.message);
   }
 
   toastSuccess('Pengaturan halaman diterapkan!');
   closeEditorSettings();
 
-  // Trigger autosave
+  // Trigger autosave (karena pengaturan berubah)
+  updateEditorSaveStatus('unsaved');
   scheduleAutoSave();
 }
 
