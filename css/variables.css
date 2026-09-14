@@ -1,0 +1,44 @@
+/* ============================================
+   PAKTI - CSS Variables & Design Tokens
+   ============================================ */
+:root {
+  /* Primary Colors */
+  --primary-blue: #1a73e8;
+  --primary-dark: #1557b0;
+  --primary-light: #e8f0fe;
+  --government-blue: #0d47a1;
+
+  /* Sidebar Colors */
+  --sidebar-dark: #1e3a5f;
+  --sidebar-hover: #2d4a6f;
+
+  /* Neutral Colors */
+  --white: #ffffff;
+  --light-bg: #f0f4f8;
+  --border-color: #e2e8f0;
+  --text-dark: #1e293b;
+  --text-medium: #475569;
+  --text-light: #94a3b8;
+
+  /* Status Colors */
+  --success: #10b981;
+  --danger: #ef4444;
+  --warning: #f59e0b;
+  --info: #06b6d4;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.15);
+
+  /* Border Radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+
+  /* Transitions */
+  --transition: all 0.3s ease;
+
+  /* Layout */
+  --sidebar-width: 260px;
+}

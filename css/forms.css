@@ -1,0 +1,181 @@
+/* ============================================
+   PAKTI - Forms Styling
+   ============================================ */
+.form-container {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  padding: 32px;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-color);
+}
+
+.form-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--text-dark);
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid var(--primary-blue);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+.form-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-medium);
+}
+
+.form-label .required {
+  color: var(--danger);
+}
+
+.form-input,
+.form-select {
+  padding: 12px 16px;
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  font-family: inherit;
+  transition: var(--transition);
+  background: var(--white);
+}
+
+.form-input:focus,
+.form-select:focus {
+  outline: none;
+  border-color: var(--primary-blue);
+  box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.1);
+}
+
+.form-input.error,
+.form-select.error {
+  border-color: var(--danger);
+}
+
+.form-error {
+  font-size: 0.75rem;
+  color: var(--danger);
+  margin-top: 4px;
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border-color);
+}
+
+.form-subtitle {
+  color: var(--text-medium);
+  margin-bottom: 24px;
+  font-size: 0.9rem;
+}
+
+/* ============================================
+   File Upload
+   ============================================ */
+.file-upload-wrapper {
+  position: relative;
+}
+
+.file-upload-area {
+  border: 2px dashed var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 30px;
+  text-align: center;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.file-upload-area:hover {
+  border-color: var(--primary-blue);
+  background: var(--primary-light);
+}
+
+.file-upload-area i {
+  font-size: 40px;
+  color: var(--primary-blue);
+  margin-bottom: 12px;
+}
+
+.file-upload-area p {
+  color: var(--text-medium);
+  margin-bottom: 8px;
+}
+
+.file-upload-area span {
+  font-size: 0.8rem;
+  color: var(--text-light);
+}
+
+.file-name {
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: var(--primary-light);
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  color: var(--primary-blue);
+}
+
+/* Multiple File Upload Items */
+.file-upload-item {
+  margin-bottom: 20px;
+  padding: 16px;
+  background: #fafbfc;
+  border-radius: var(--radius-md);
+  border: 1px solid #e8ecf0;
+}
+
+.file-upload-item:last-child {
+  margin-bottom: 0;
+}
+
+.file-upload-label {
+  display: block;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text-dark);
+  margin-bottom: 10px;
+  padding-left: 8px;
+  border-left: 3px solid var(--primary-blue);
+}
+
+.upload-info-text {
+  margin-top: 16px !important;
+  display: block;
+  padding: 12px 16px;
+  background: #fffbeb;
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--warning);
+  color: #92400e;
+}
+
+.file-upload-area.drag-over {
+  border-color: var(--success);
+  background: #f0fdf4;
+}
+
+.file-upload-area.has-file {
+  border-color: var(--success);
+  background: #f0fdf4;
+}
+
+.file-upload-area.has-file i {
+  color: var(--success);
+}

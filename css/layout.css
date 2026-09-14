@@ -1,0 +1,176 @@
+/* ============================================
+   PAKTI - Sidebar Layout
+   ============================================ */
+.app-container {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: var(--sidebar-width);
+  background: linear-gradient(180deg, var(--sidebar-dark) 0%, #152238 100%);
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  overflow-y: auto;
+  z-index: 1000;
+  transition: var(--transition);
+}
+
+.sidebar-header {
+  padding: 24px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: center;
+}
+
+.sidebar-logo {
+  width: 60px;
+  height: 60px;
+  background: var(--white);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 12px;
+  font-size: 28px;
+  color: var(--government-blue);
+}
+
+.sidebar-title {
+  color: var(--white);
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.sidebar-subtitle {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.75rem;
+}
+
+.sidebar-menu {
+  padding: 16px 12px;
+}
+
+.menu-section {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 16px 12px 8px;
+  margin-top: 8px;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  color: rgba(255, 255, 255, 0.7);
+  text-decoration: none;
+  border-radius: var(--radius-md);
+  margin-bottom: 4px;
+  cursor: pointer;
+  transition: var(--transition);
+  font-size: 0.9rem;
+}
+
+.menu-item:hover {
+  background: var(--sidebar-hover);
+  color: var(--white);
+}
+
+.menu-item.active {
+  background: var(--primary-blue);
+  color: var(--white);
+}
+
+.menu-item i {
+  width: 20px;
+  text-align: center;
+}
+
+.menu-badge {
+  margin-left: auto;
+  background: var(--danger);
+  color: var(--white);
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+/* ============================================
+   Main Content Layout
+   ============================================ */
+.main-content {
+  flex: 1;
+  margin-left: var(--sidebar-width);
+  min-height: 100vh;
+}
+
+.top-bar {
+  background: var(--white);
+  padding: 16px 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: var(--shadow-sm);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.page-title {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--text-dark);
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+}
+
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--primary-blue);
+  color: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+}
+
+.user-name {
+  font-weight: 500;
+  color: var(--text-dark);
+}
+
+.user-role {
+  font-size: 0.75rem;
+  color: var(--text-light);
+}
+
+.content-area {
+  padding: 30px;
+}
+
+.mobile-menu-btn {
+  display: none;
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: var(--primary-blue);
+  color: var(--white);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}

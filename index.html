@@ -1,0 +1,1321 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="PAKTI - Pengelolaan Angka Kredit Integrasi PNS Kabupaten Kutai Kartanegara">
+  <title>PAKTI - Pengelolaan Angka Kredit Integrasi</title>
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%230d47a1'/%3E%3Ctext x='50' y='65' font-size='50' text-anchor='middle' fill='white' font-family='Arial'%3EP%3C/text%3E%3C/svg%3E">
+
+  <!-- Google Fonts - Poppins -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Supabase JS SDK via CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+
+  <!-- ============================================
+       PAKTI STYLESHEETS (modular)
+       ============================================ -->
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/forms.css">
+  <link rel="stylesheet" href="css/tables.css">
+  <link rel="stylesheet" href="css/modals.css">
+  <link rel="stylesheet" href="css/pages.css">
+  <link rel="stylesheet" href="css/splash.css">
+  <link rel="stylesheet" href="css/petunjuk.css">
+  <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+  <!-- ============================================
+       SPLASH SCREEN / LANDING PAGE
+       ============================================ -->
+  <div class="splash-screen" id="splashScreen">
+    <div class="splash-particles" id="splashParticles"></div>
+
+    <div class="splash-logo-container">
+      <div class="splash-logo-ring">
+        <i class="fas fa-file-signature splash-logo-icon"></i>
+      </div>
+    </div>
+
+    <h1 class="splash-title">PAKTI</h1>
+    <p class="splash-subtitle">Pengelolaan Angka Kredit Integrasi</p>
+
+    <div class="splash-progress-container">
+      <div class="splash-progress-text">
+        <span>Memuat Sistem</span>
+        <span class="splash-progress-percent" id="splashPercent">0%</span>
+      </div>
+      <div class="splash-progress-bar">
+        <div class="splash-progress-fill" id="splashProgressFill"></div>
+      </div>
+    </div>
+
+    <p class="splash-loading-text splash-loading-dots">Sedang mempersiapkan dashboard Anda</p>
+
+    <div class="splash-footer">
+      <i class="fas fa-shield-alt"></i>
+      Pemerintah Kabupaten Kutai Kartanegara &copy; 2026
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- ============================================
+       MODAL: LOGIN
+       ============================================ -->
+  <div class="modal-overlay" id="loginModal">
+    <div class="modal" style="max-width: 400px;">
+      <div class="modal-header">
+        <h3 class="modal-title"><i class="fas fa-sign-in-alt"></i> Login Admin</h3>
+        <button class="modal-close" onclick="closeModal('loginModal')">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p style="margin-bottom: 20px; color: var(--text-medium);">Silakan login untuk mengakses halaman ini.</p>
+        <form id="loginModalForm">
+          <div class="form-group" style="margin-bottom: 16px;">
+            <label class="form-label">Username</label>
+            <input type="text" class="form-input" id="modalLoginUsername" placeholder="Masukkan username" required>
+          </div>
+          <div class="form-group" style="margin-bottom: 16px;">
+            <label class="form-label">Password</label>
+            <input type="password" class="form-input" id="modalLoginPassword" placeholder="Masukkan password" required>
+          </div>
+          <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;">
+            <i class="fas fa-sign-in-alt"></i> Masuk
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Login Page - Removed, using modal instead -->
+  <div class="login-container" id="loginPage" style="display: none;">
+    <div class="login-box">
+      <div class="login-logo"><i class="fas fa-file-signature"></i></div>
+      <h1 class="login-title">PAK Integrasi PNS</h1>
+      <p class="login-subtitle">Masuk ke Dashboard Admin</p>
+    </div>
+  </div>
+
+  <!-- ============================================
+       APP CONTAINER
+       ============================================ -->
+  <div class="app-container" id="appContainer" style="display: none;">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo"><i class="fas fa-file-signature"></i></div>
+        <h2 class="sidebar-title">Selamat Datang, PNS Kutai Kartanegara</h2>
+        <p class="sidebar-subtitle">Dashboard Pengelolaan PAK Integrasi PNS Kab. Kutai Kartanegara</p>
+      </div>
+
+      <nav class="sidebar-menu">
+        <div class="menu-section">Menu Utama</div>
+
+        <a class="menu-item active" data-page="dashboard" href="#">
+          <i class="fas fa-chart-bar"></i>
+          <span>Dashboard Data</span>
+        </a>
+
+        <a class="menu-item" data-page="formulir" href="#">
+          <i class="fas fa-file-plus"></i>
+          <span>Formulir Pengajuan</span>
+        </a>
+
+        <a class="menu-item" data-page="tracking" href="#">
+          <i class="fas fa-search-location"></i>
+          <span>Pemantauan Proses</span>
+        </a>
+
+        <a class="menu-item" data-page="pakTerbit" href="#">
+          <i class="fas fa-file-contract"></i>
+          <span>Cek PAK Terbit</span>
+        </a>
+
+        <a class="menu-item" data-page="cekStatus" href="#">
+          <i class="fas fa-clipboard-check"></i>
+          <span>Cek Status Pengajuan</span>
+        </a>
+
+        <div class="menu-section">Informasi</div>
+
+        <a class="menu-item" data-page="petunjuk" href="#">
+          <i class="fas fa-book-open"></i>
+          <span>Petunjuk Penggunaan</span>
+        </a>
+
+        <div class="menu-section">Administrasi</div>
+
+        <a class="menu-item" data-page="admin" href="#">
+          <i class="fas fa-cog"></i>
+          <span>Admin Panel</span>
+          <span class="menu-badge" id="adminBadge" style="display: none;">!</span>
+        </a>
+
+        <a class="menu-item" id="logoutBtn" href="#" style="display: none;">
+          <i class="fas fa-sign-out-alt"></i>
+          <span>Logout</span>
+        </a>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <header class="top-bar">
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <button class="mobile-menu-btn" id="mobileMenuBtn">
+            <i class="fas fa-bars"></i>
+          </button>
+          <h1 class="page-title" id="pageTitle">Dashboard Data</h1>
+        </div>
+
+        <div class="user-info" id="userInfo" style="display: none; cursor: pointer;" onclick="toggleUserMenu()">
+          <div class="user-avatar"><i class="fas fa-user"></i></div>
+          <div>
+            <div class="user-name" id="userName">Admin</div>
+            <div class="user-role" id="userRole">Administrator</div>
+          </div>
+          <i class="fas fa-chevron-down" style="margin-left: 8px; color: var(--text-light);"></i>
+
+          <div id="userDropdown" style="display: none; position: absolute; top: 60px; right: 30px; background: var(--white); border-radius: 8px; box-shadow: var(--shadow-lg); min-width: 180px; z-index: 1000; overflow: hidden;">
+            <a href="#" onclick="handleLogout(); return false;" style="display: block; padding: 12px 16px; color: var(--danger); text-decoration: none; font-weight: 500;">
+              <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
+          </div>
+        </div>
+
+        <button id="headerLogoutBtn" class="btn btn-danger btn-sm" style="display: none; margin-right: 10px;" onclick="handleLogout()">
+          <i class="fas fa-sign-out-alt"></i> Logout
+        </button>
+      </header>
+
+      <div class="content-area">
+        <!-- ============================================
+             DASHBOARD DATA
+             ============================================ -->
+        <section class="page-section active" id="dashboardPage">
+          <div class="stats-grid" id="statsGrid">
+            <div class="stat-card total">
+              <div class="stat-icon"><i class="fas fa-database"></i></div>
+              <div class="stat-value" id="statTotal">0</div>
+              <div class="stat-label">Total Pengajuan</div>
+            </div>
+            <div class="stat-card pending">
+              <div class="stat-icon"><i class="fas fa-clock"></i></div>
+              <div class="stat-value" id="statPending">0</div>
+              <div class="stat-label">Menunggu</div>
+            </div>
+            <div class="stat-card perbaikan">
+              <div class="stat-icon"><i class="fas fa-edit"></i></div>
+              <div class="stat-value" id="statPerbaikan">0</div>
+              <div class="stat-label">Perbaikan</div>
+            </div>
+            <div class="stat-card ditolak">
+              <div class="stat-icon"><i class="fas fa-times-circle"></i></div>
+              <div class="stat-value" id="statDitolak">0</div>
+              <div class="stat-label">Ditolak</div>
+            </div>
+            <div class="stat-card terbit">
+              <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+              <div class="stat-value" id="statTerbit">0</div>
+              <div class="stat-label">Terbit</div>
+            </div>
+          </div>
+
+          <div class="charts-grid">
+            <div class="chart-card">
+              <h3 class="chart-title"><i class="fas fa-chart-pie"></i> Status Pengajuan</h3>
+              <canvas id="pieChart"></canvas>
+            </div>
+            <div class="chart-card">
+              <h3 class="chart-title"><i class="fas fa-chart-bar"></i> Jenis JF</h3>
+              <canvas id="barChart"></canvas>
+            </div>
+            <div class="chart-card">
+              <h3 class="chart-title"><i class="fas fa-chart-line"></i> Pengajuan per Bulan</h3>
+              <canvas id="lineChart"></canvas>
+            </div>
+          </div>
+
+          <div class="filter-section">
+            <div class="filter-grid">
+              <div class="filter-group">
+                <label class="filter-label">Pencarian</label>
+                <div class="search-wrapper">
+                  <i class="fas fa-search"></i>
+                  <input type="text" class="search-input" id="dashboardSearch" placeholder="Cari nama, NIP, atau satker...">
+                </div>
+              </div>
+              <div class="filter-group">
+                <label class="filter-label">Jenis JF</label>
+                <select class="filter-select" id="dashboardFilterJF">
+                  <option value="">Semua Jenis JF</option>
+                  <option value="Administrator Kesehatan">Administrator Kesehatan</option>
+                  <option value="Apoteker">Apoteker</option>
+                  <option value="Asisten Apoteker">Asisten Apoteker</option>
+                  <option value="Asisten Penata Anestesi">Asisten Penata Anestesi</option>
+                  <option value="Bendahara">Bendahara</option>
+                  <option value="Bidan">Bidan</option>
+                  <option value="Dokter">Dokter</option>
+                  <option value="Dokter Gigi">Dokter Gigi</option>
+                  <option value="Epidemiolog Kesehatan">Epidemiolog Kesehatan</option>
+                  <option value="Fisikawan Medis">Fisikawan Medis</option>
+                  <option value="Fisioterapis">Fisioterapis</option>
+                  <option value="Nutrisionis">Nutrisionis</option>
+                  <option value="Okupasi Terapis">Okupasi Terapis</option>
+                  <option value="Pembimbing Kesehatan Kerja">Pembimbing Kesehatan Kerja</option>
+                  <option value="Penata Anestesi">Penata Anestesi</option>
+                  <option value="Perawat">Perawat</option>
+                  <option value="Perekam Medis">Perekam Medis</option>
+                  <option value="Pranata Laboratorium Kesehatan">Pranata Laboratorium Kesehatan</option>
+                  <option value="Promosi Kesehatan dan Ilmu Perilaku">Promosi Kesehatan dan Ilmu Perilaku</option>
+                  <option value="Psikologi Klinis">Psikologi Klinis</option>
+                  <option value="Radiografer">Radiografer</option>
+                  <option value="Refraksionis Optisien / Optometris">Refraksionis Optisien / Optometris</option>
+                  <option value="Teknisi Elektromedis">Teknisi Elektromedis</option>
+                  <option value="Teknisi Gigi">Teknisi Gigi</option>
+                  <option value="Teknisi Transfusi Darah">Teknisi Transfusi Darah</option>
+                  <option value="Tenaga Sanitasi Lingkungan">Tenaga Sanitasi Lingkungan</option>
+                  <option value="Terapis Gigi dan Mulut">Terapis Gigi dan Mulut</option>
+                  <option value="Terapis Wicara">Terapis Wicara</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label class="filter-label">Status</label>
+                <select class="filter-select" id="dashboardFilterStatus">
+                  <option value="">Semua Status</option>
+                  <option value="Menunggu">Menunggu</option>
+                  <option value="Perbaikan">Perbaikan</option>
+                  <option value="Ditolak">Ditolak</option>
+                  <option value="Terbit">Terbit</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="table-container">
+            <div class="table-header">
+              <h3 class="table-title"><i class="fas fa-list"></i> Data Pengajuan</h3>
+              <button class="btn btn-primary btn-sm" onclick="refreshDashboard()">
+                <i class="fas fa-sync-alt"></i> Refresh
+              </button>
+            </div>
+            <div class="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>No</th>
+                    <th>Nama Lengkap</th>
+                    <th>NIP</th>
+                    <th>Satuan Kerja</th>
+                    <th>Jenis JF</th>
+                    <th>Jenjang JF</th>
+                    <th>Status</th>
+                    <th>Tanggal Submit</th>
+                  </tr>
+                </thead>
+                <tbody id="dashboardTableBody"></tbody>
+              </table>
+            </div>
+            <div class="pagination-container">
+              <div class="pagination-info" id="dashboardPaginationInfo">Menampilkan 0 - 0 dari 0 data</div>
+              <div class="pagination-controls" id="dashboardPagination"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============================================
+             FORMULIR PENGAJUAN
+             ============================================ -->
+        <section class="page-section" id="formulirPage">
+          <div class="form-container">
+            <h2 class="form-title"><i class="fas fa-file-plus"></i> Formulir Pengajuan PAK Integrasi PNS</h2>
+
+            <form id="pengajuanForm">
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label">Email Aktif <span class="required">*</span></label>
+                  <input type="email" class="form-input" id="email" name="email" required>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">No. HP/ Whatsapp <span class="required">*</span></label>
+                  <input type="tel" class="form-input" id="noHP" name="noHP" required>
+                </div>
+
+                <div class="form-group full-width">
+                  <label class="form-label">Nama Lengkap dengan Gelar <span class="required">*</span></label>
+                  <input type="text" class="form-input" id="nama" name="nama" placeholder="Ns. Mukmin Nasri, S.Kep" required>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">NIP <span class="required">*</span></label>
+                  <input type="text" class="form-input" id="nip" name="nip" maxlength="18" placeholder="123456789012345678" required>
+                  <div class="form-error" id="nipError"></div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">No. Karpeg</label>
+                  <input type="text" class="form-input" id="noKarpeg" name="noKarpeg">
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Tempat Lahir <span class="required">*</span></label>
+                  <input type="text" class="form-input" id="tempatLahir" name="tempatLahir" required>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Tanggal Lahir <span class="required">*</span></label>
+                  <input type="date" class="form-input" id="tanggalLahir" name="tanggalLahir" required>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Pendidikan <span class="required">*</span></label>
+                  <select class="form-select" id="pendidikan" name="pendidikan" required>
+                    <option value="">Pilih Pendidikan</option>
+                    <option value="D3">D3 (Sarjana Muda)</option>
+                    <option value="D4">D4 (Sarjana Terapan)</option>
+                    <option value="S1">S1 (Strata 1)</option>
+                    <option value="Profesi">Profesi</option>
+                    <option value="S2">S2 (Magister)</option>
+                    <option value="Spesialis">Spesialis</option>
+                    <option value="Sub Spesialis">Sub Spesialis</option>
+                    <option value="S3">S3 (Doktor)</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Jenis Kelamin <span class="required">*</span></label>
+                  <select class="form-select" id="jenisKelamin" name="jenisKelamin" required>
+                    <option value="">Pilih Jenis Kelamin</option>
+                    <option value="Laki-laki">Laki-laki</option>
+                    <option value="Perempuan">Perempuan</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Pangkat/Gol <span class="required">*</span></label>
+                  <select class="form-select" id="pangkatGol" name="pangkatGol" required>
+                    <option value="">Pilih Pangkat</option>
+                    <option value="Pembina - IV/a Ahli Madya">Pembina - IV/a Ahli Madya</option>
+                    <option value="Pembina - IV/a Ahli Muda">Pembina - IV/a Ahli Muda</option>
+                    <option value="Pembina Tk. I - IV/b Ahli Madya">Pembina Tk. I - IV/b Ahli Madya</option>
+                    <option value="Pembina Tk. I - IV/b Ahli Muda">Pembina Tk. I - IV/b Ahli Muda</option>
+                    <option value="Pembina Utama Muda - IV/c Ahli Madya">Pembina Utama Muda - IV/c Ahli Madya</option>
+                    <option value="Pembina Utama Madya - IV/d Ahli Utama">Pembina Utama Madya - IV/d Ahli Utama</option>
+                    <option value="Penata - III/c Ahli Muda">Penata - III/c Ahli Muda</option>
+                    <option value="Penata - III/c Ahli Pertama">Penata - III/c Ahli Pertama</option>
+                    <option value="Penata - III/c Penyelia">Penata - III/c Penyelia</option>
+                    <option value="Penata Tk. I - III/d Ahli Madya">Penata Tk. I - III/d Ahli Madya</option>
+                    <option value="Penata Tk. I - III/d Ahli Muda">Penata Tk. I - III/d Ahli Muda</option>
+                    <option value="Penata Tk. I - III/d Penyelia">Penata Tk. I - III/d Penyelia</option>
+                    <option value="Penata Muda - III/a Ahli Pertama">Penata Muda - III/a Ahli Pertama</option>
+                    <option value="Penata Muda - III/a Mahir">Penata Muda - III/a Mahir</option>
+                    <option value="Penata Muda Tk. I - III/b Ahli Muda">Penata Muda Tk. I - III/b Ahli Muda</option>
+                    <option value="Penata Muda Tk. I - III/b Ahli Pertama">Penata Muda Tk. I - III/b Ahli Pertama</option>
+                    <option value="Penata Muda Tk. I - III/b Mahir">Penata Muda Tk. I - III/b Mahir</option>
+                    <option value="Pengatur Muda - II/a Pemula">Pengatur Muda - II/a Pemula</option>
+                    <option value="Pengatur Muda Tk. I - II/b Terampil">Pengatur Muda Tk. I - II/b Terampil</option>
+                    <option value="Pengatur - II/c Terampil">Pengatur - II/c Terampil</option>
+                    <option value="Pengatur Tk. I - II/d Terampil">Pengatur Tk. I - II/d Terampil</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">TMT Pangkat <span class="required">*</span></label>
+                  <input type="date" class="form-input" id="tmtPangkat" name="tmtPangkat" required>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Jenis JF <span class="required">*</span></label>
+                  <select class="form-select" id="jenisJF" name="jenisJF" required>
+                    <option value="">Pilih Jenis JF</option>
+                    <option value="Administrator Kesehatan">Administrator Kesehatan</option>
+                    <option value="Apoteker">Apoteker</option>
+                    <option value="Asisten Apoteker">Asisten Apoteker</option>
+                    <option value="Asisten Penata Anestesi">Asisten Penata Anestesi</option>
+                    <option value="Bendahara">Bendahara</option>
+                    <option value="Bidan">Bidan</option>
+                    <option value="Dokter">Dokter</option>
+                    <option value="Dokter Gigi">Dokter Gigi</option>
+                    <option value="Epidemiolog Kesehatan">Epidemiolog Kesehatan</option>
+                    <option value="Fisikawan Medis">Fisikawan Medis</option>
+                    <option value="Fisioterapis">Fisioterapis</option>
+                    <option value="Nutrisionis">Nutrisionis</option>
+                    <option value="Okupasi Terapis">Okupasi Terapis</option>
+                    <option value="Pembimbing Kesehatan Kerja">Pembimbing Kesehatan Kerja</option>
+                    <option value="Penata Anestesi">Penata Anestesi</option>
+                    <option value="Perawat">Perawat</option>
+                    <option value="Perekam Medis">Perekam Medis</option>
+                    <option value="Pranata Laboratorium Kesehatan">Pranata Laboratorium Kesehatan</option>
+                    <option value="Promosi Kesehatan dan Ilmu Perilaku">Promosi Kesehatan dan Ilmu Perilaku</option>
+                    <option value="Psikologi Klinis">Psikologi Klinis</option>
+                    <option value="Radiografer">Radiografer</option>
+                    <option value="Refraksionis Optisien / Optometris">Refraksionis Optisien / Optometris</option>
+                    <option value="Teknisi Elektromedis">Teknisi Elektromedis</option>
+                    <option value="Teknisi Gigi">Teknisi Gigi</option>
+                    <option value="Teknisi Transfusi Darah">Teknisi Transfusi Darah</option>
+                    <option value="Tenaga Sanitasi Lingkungan">Tenaga Sanitasi Lingkungan</option>
+                    <option value="Terapis Gigi dan Mulut">Terapis Gigi dan Mulut</option>
+                    <option value="Terapis Wicara">Terapis Wicara</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Jenjang JF <span class="required">*</span></label>
+                  <select class="form-select" id="jenjangJF" name="jenjangJF" required>
+                    <option value="">Pilih Jenjang</option>
+                    <option value="Terampil">Terampil</option>
+                    <option value="Mahir">Mahir</option>
+                    <option value="Penyelia">Penyelia</option>
+                    <option value="Pertama">Pertama</option>
+                    <option value="Muda">Muda</option>
+                    <option value="Madya">Madya</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">TMT JF <span class="required">*</span></label>
+                  <input type="date" class="form-input" id="tmtJF" name="tmtJF" required>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Masa Kerja Gol <span class="required">*</span></label>
+                  <input type="text" class="form-input" id="masaKerjaGol" name="masaKerjaGol" placeholder="Contoh: 05 Tahun 03 Bulan" required>
+                </div>
+
+                <div class="form-group full-width">
+                  <label class="form-label">Satuan Kerja <span class="required">*</span></label>
+                  <select class="form-select" id="satuanKerja" name="satuanKerja" required>
+                    <option value="">Pilih Satuan Kerja</option>
+                    <option value="Dinas Kesehatan">Dinas Kesehatan</option>
+                    <option value="UPTD Puskesmas Badak Baru">UPTD Puskesmas Badak Baru</option>
+                    <option value="UPTD Puskesmas Batuah">UPTD Puskesmas Batuah</option>
+                    <option value="UPTD Puskesmas Bunga Jadi">UPTD Puskesmas Bunga Jadi</option>
+                    <option value="UPTD Puskesmas Handil Baru">UPTD Puskesmas Handil Baru</option>
+                    <option value="UPTD Puskesmas Jonggon Jaya">UPTD Puskesmas Jonggon Jaya</option>
+                    <option value="UPTD Puskesmas Kahala">UPTD Puskesmas Kahala</option>
+                    <option value="UPTD Puskesmas Kembang Janggut">UPTD Puskesmas Kembang Janggut</option>
+                    <option value="UPTD Puskesmas Kota Bangun">UPTD Puskesmas Kota Bangun</option>
+                    <option value="UPTD Puskesmas Loa Duri">UPTD Puskesmas Loa Duri</option>
+                    <option value="UPTD Puskesmas Loa Ipuh">UPTD Puskesmas Loa Ipuh</option>
+                    <option value="UPTD Puskesmas Loa Janan">UPTD Puskesmas Loa Janan</option>
+                    <option value="UPTD Puskesmas Loa Kulu">UPTD Puskesmas Loa Kulu</option>
+                    <option value="UPTD Puskesmas Mangkurawang">UPTD Puskesmas Mangkurawang</option>
+                    <option value="UPTD Puskesmas Marangkayu">UPTD Puskesmas Marangkayu</option>
+                    <option value="UPTD Puskesmas Muara Badak">UPTD Puskesmas Muara Badak</option>
+                    <option value="UPTD Puskesmas Muara Jawa">UPTD Puskesmas Muara Jawa</option>
+                    <option value="UPTD Puskesmas Muara Kaman">UPTD Puskesmas Muara Kaman</option>
+                    <option value="UPTD Puskesmas Muara Muntai">UPTD Puskesmas Muara Muntai</option>
+                    <option value="UPTD Puskesmas Muara Wis">UPTD Puskesmas Muara Wis</option>
+                    <option value="UPTD Puskesmas Perangat">UPTD Puskesmas Perangat</option>
+                    <option value="UPTD Puskesmas Rapak Mahang">UPTD Puskesmas Rapak Mahang</option>
+                    <option value="UPTD Puskesmas Rimba Ayu">UPTD Puskesmas Rimba Ayu</option>
+                    <option value="UPTD Puskesmas Ritan Baru">UPTD Puskesmas Ritan Baru</option>
+                    <option value="UPTD Puskesmas Samboja">UPTD Puskesmas Samboja</option>
+                    <option value="UPTD Puskesmas Sangasanga">UPTD Puskesmas Sangasanga</option>
+                    <option value="UPTD Puskesmas Sebulu I">UPTD Puskesmas Sebulu I</option>
+                    <option value="UPTD Puskesmas Sebulu II">UPTD Puskesmas Sebulu II</option>
+                    <option value="UPTD Puskesmas Separi III">UPTD Puskesmas Separi III</option>
+                    <option value="UPTD Puskesmas Sungai Merdeka">UPTD Puskesmas Sungai Merdeka</option>
+                    <option value="UPTD Puskesmas Sungai Meriam">UPTD Puskesmas Sungai Meriam</option>
+                    <option value="UPTD Puskesmas Tabang">UPTD Puskesmas Tabang</option>
+                    <option value="UPTD Puskesmas Teluk Dalam">UPTD Puskesmas Teluk Dalam</option>
+                    <option value="RSUD Aji Muhammad Parikesit">RSUD Aji Muhammad Parikesit</option>
+                    <option value="RSUD Aji Batara Agung Dewa Sakti">RSUD Aji Batara Agung Dewa Sakti</option>
+                    <option value="RSUD Dayaku Raja">RSUD Dayaku Raja</option>
+                    <option value="UPT Labkesda dan Elektromedis">UPT Labkesda dan Elektromedis</option>
+                    <option value="UPT Gudang Farmasi Klinik">UPT Gudang Farmasi Klinik</option>
+                    <option value="RSUD Aji Muhammad Idris">RSUD Aji Muhammad Idris</option>
+                  </select>
+                </div>
+
+                <!-- Upload Dokumen Kelengkapan - 4 Field Terpisah -->
+                <div class="form-group full-width">
+                  <label class="form-label"><i class="fas fa-file-upload"></i> Upload Dokumen Kelengkapan <span class="required">*</span></label>
+
+                  <div class="file-upload-item">
+                    <label class="file-upload-label">1. Upload Foto Berwarna 4x6 cm</label>
+                    <div class="file-upload-wrapper">
+                      <div class="file-upload-area" id="fileUploadAreaFoto" ondrop="handleDrop(event, 'foto')" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" onclick="document.getElementById('fileInputFoto').click()">
+                        <i class="fas fa-image"></i>
+                        <p>Klik atau drag file foto di sini</p>
+                        <span>Format: JPG/JPEG/PNG | Ukuran maksimal: 2MB</span>
+                      </div>
+                      <input type="file" id="fileInputFoto" accept=".jpg,.jpeg,.png" style="display: none;" onchange="handleFileSelect(this, 'foto')">
+                      <div class="file-name" id="fileNameFoto" style="display: none;"></div>
+                    </div>
+                  </div>
+
+                  <div class="file-upload-item">
+                    <label class="file-upload-label">2. Upload SK Pangkat Terakhir Tahun 2022/2023</label>
+                    <div class="file-upload-wrapper">
+                      <div class="file-upload-area" id="fileUploadAreaSKPangkat" ondrop="handleDrop(event, 'skPangkat')" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" onclick="document.getElementById('fileInputSKPangkat').click()">
+                        <i class="fas fa-file-pdf"></i>
+                        <p>Klik atau drag file PDF di sini</p>
+                        <span>Format: PDF | Ukuran maksimal: 1MB</span>
+                      </div>
+                      <input type="file" id="fileInputSKPangkat" accept=".pdf" style="display: none;" onchange="handleFileSelect(this, 'skPangkat')">
+                      <div class="file-name" id="fileNameSKPangkat" style="display: none;"></div>
+                    </div>
+                  </div>
+
+                  <div class="file-upload-item">
+                    <label class="file-upload-label">3. Upload SK Jabatan Fungsional (Jabfung) Tahun 2022/2023</label>
+                    <div class="file-upload-wrapper">
+                      <div class="file-upload-area" id="fileUploadAreaSKJabfung" ondrop="handleDrop(event, 'skJabfung')" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" onclick="document.getElementById('fileInputSKJabfung').click()">
+                        <i class="fas fa-file-pdf"></i>
+                        <p>Klik atau drag file PDF di sini</p>
+                        <span>Format: PDF | Ukuran maksimal: 1MB</span>
+                      </div>
+                      <input type="file" id="fileInputSKJabfung" accept=".pdf" style="display: none;" onchange="handleFileSelect(this, 'skJabfung')">
+                      <div class="file-name" id="fileNameSKJabfung" style="display: none;"></div>
+                    </div>
+                  </div>
+
+                  <div class="file-upload-item">
+                    <label class="file-upload-label">4. Upload PAK Konvensional Periode Sampai Tahun 2022</label>
+                    <div class="file-upload-wrapper">
+                      <div class="file-upload-area" id="fileUploadAreaPAK" ondrop="handleDrop(event, 'pakKonvensional')" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" onclick="document.getElementById('fileInputPAK').click()">
+                        <i class="fas fa-file-pdf"></i>
+                        <p>Klik atau drag file PDF di sini</p>
+                        <span>Format: PDF | Ukuran maksimal: 1MB</span>
+                      </div>
+                      <input type="file" id="fileInputPAK" accept=".pdf" style="display: none;" onchange="handleFileSelect(this, 'pakKonvensional')">
+                      <div class="file-name" id="fileNamePAK" style="display: none;"></div>
+                    </div>
+                  </div>
+
+                  <small class="text-muted upload-info-text">
+                    <i class="fas fa-info-circle"></i> Pastikan semua dokumen diupload dengan format yang sesuai. Wajib melengkapi ke-4 dokumen di atas.
+                  </small>
+                </div>
+              </div>
+
+              <div class="form-actions">
+                <button type="submit" class="btn btn-primary" id="submitBtn">
+                  <i class="fas fa-paper-plane"></i> Submit Pengajuan
+                </button>
+                <button type="reset" class="btn btn-warning">
+                  <i class="fas fa-redo"></i> Reset Form
+                </button>
+              </div>
+            </form>
+          </div>
+        </section>
+
+        <!-- ============================================
+             PEMANTAUAN PROSES / TRACKING
+             ============================================ -->
+        <section class="page-section" id="trackingPage">
+          <div class="filter-section">
+            <div class="filter-grid">
+              <div class="filter-group">
+                <label class="filter-label">Pencarian Nama</label>
+                <div class="search-wrapper">
+                  <i class="fas fa-search"></i>
+                  <input type="text" class="search-input" id="trackingSearch" placeholder="Cari nama...">
+                </div>
+              </div>
+              <div class="filter-group">
+                <label class="filter-label">Status</label>
+                <select class="filter-select" id="trackingFilterStatus">
+                  <option value="">Semua Status</option>
+                  <option value="Menunggu">Menunggu</option>
+                  <option value="Perbaikan">Perbaikan</option>
+                  <option value="Ditolak">Ditolak</option>
+                  <option value="Terbit">Terbit</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label class="filter-label">Satuan Kerja</label>
+                <select class="filter-select" id="trackingFilterSatker">
+                  <option value="">Semua Satuan Kerja</option>
+                  <option value="Dinas Kesehatan">Dinas Kesehatan</option>
+                  <option value="UPTD Puskesmas Samboja">UPTD Puskesmas Samboja</option>
+                  <option value="RSUD Aji Muhammad Parikesit">RSUD Aji Muhammad Parikesit</option>
+                  <option value="RSUD Aji Muhammad Idris">RSUD Aji Muhammad Idris</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="table-container">
+            <div class="table-header">
+              <h3 class="table-title"><i class="fas fa-search-location"></i> Status Pengajuan</h3>
+            </div>
+            <div class="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>No</th>
+                    <th>Nama Lengkap</th>
+                    <th>Satuan Kerja</th>
+                    <th>Jenis JF</th>
+                    <th>Status</th>
+                    <th>Catatan Admin</th>
+                    <th class="admin-only-column">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="trackingTableBody"></tbody>
+              </table>
+            </div>
+            <div class="pagination-container">
+              <div class="pagination-info" id="trackingPaginationInfo">Menampilkan 0 - 0 dari 0 data</div>
+              <div class="pagination-controls" id="trackingPagination"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============================================
+             CEK PAK TERBIT
+             ============================================ -->
+        <section class="page-section" id="pakTerbitPage">
+          <div class="pak-terbit-container">
+            <div class="pak-terbit-header">
+              <h3 class="page-section-title"><i class="fas fa-file-contract"></i> Cek PAK Terbit</h3>
+              <p class="page-section-desc">Masukkan NIK atau NIP untuk mencari data PAK yang sudah terbit</p>
+            </div>
+
+            <div class="pak-terbit-search-card">
+              <div class="search-form-group">
+                <label class="form-label"><i class="fas fa-id-card"></i> Masukkan NIK atau NIP (18 Digit)</label>
+                <div class="search-input-wrapper">
+                  <input type="text" class="form-input search-nik-input" id="pakTerbitSearchInput"
+                         placeholder="Contoh: 197001012020011001 atau 18 digit NIP..."
+                         maxlength="18"
+                         oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+                  <button class="btn btn-primary btn-search-pak" onclick="searchPAKTerbit()" id="btnSearchPAK">
+                    <i class="fas fa-search"></i> Cari PAK
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="loading-indicator" id="pakTerbitLoading" style="display: none;">
+              <div class="spinner"></div>
+              <p>Mencari data...</p>
+            </div>
+
+            <div class="pak-terbit-result" id="pakTerbitResult" style="display: none;"></div>
+
+            <div class="pak-terbit-empty" id="pakTerbitEmpty" style="display: none;">
+              <div class="empty-icon"><i class="fas fa-search"></i></div>
+              <h4>Data Tidak Ditemukan</h4>
+              <p>Pastikan NIK/NIP yang Anda masukkan benar dan PAK sudah terbit.</p>
+            </div>
+
+            <div class="pak-terbit-initial" id="pakTerbitInitial">
+              <div class="initial-icon"><i class="fas fa-file-contract"></i></div>
+              <h4>Silakan Lakukan Pencarian</h4>
+              <p>Masukkan NIK atau NIP pada kolom pencarian di atas untuk menampilkan data PAK.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============================================
+             CEK STATUS PENGAJUAN
+             ============================================ -->
+        <section class="page-section" id="cekStatusPage">
+          <div class="cek-status-container">
+            <div class="cek-status-form">
+              <h3><i class="fas fa-clipboard-check"></i> Cek Status Pengajuan</h3>
+              <p style="color: var(--text-medium); margin-bottom: 20px;">Masukkan NIK (NIP) untuk mengecek status pengajuan PAK Anda.</p>
+
+              <div class="cek-input-group">
+                <div class="form-group">
+                  <label class="form-label">Masukkan NIK (18 Digit)</label>
+                  <input type="text" class="form-input" id="cekNikInput" placeholder="Contoh: 197001012020011001" maxlength="18" required pattern="[0-9]{18}" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+                </div>
+                <button class="btn btn-primary" onclick="cekStatusByNIK()" style="margin-bottom: 0; height: fit-content;">
+                  <i class="fas fa-search"></i> Cek Status
+                </button>
+              </div>
+            </div>
+
+            <div id="cekStatusResult"></div>
+          </div>
+        </section>
+
+        <!-- ============================================
+             PETUNJUK PENGGUNAAN
+             ============================================ -->
+        <section class="page-section" id="petunjukPage">
+          <div class="petunjuk-header">
+            <div class="petunjuk-header-content">
+              <div class="petunjuk-header-icon"><i class="fas fa-book-open"></i></div>
+              <div class="petunjuk-header-text">
+                <h1>Petunjuk Penggunaan</h1>
+                <p>Panduan lengkap penggunaan Sistem PAKTI (Pengelolaan Angka Kredit Integrasi)</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="petunjuk-cards-grid">
+            <!-- Card 1: Dasar Hukum -->
+            <div class="petunjuk-card card-dasar-hukum">
+              <div class="card-glow"></div>
+              <div class="card-content">
+                <div class="card-icon-wrapper icon-blue"><i class="fas fa-scale-balanced"></i></div>
+                <h3 class="card-title">Dasar Hukum</h3>
+                <p class="card-subtitle">Landasan hukum sistem PAKTI</p>
+                <div class="card-body">
+                  <ul class="regulation-list">
+                    <li>
+                      <i class="fas fa-file-contract"></i>
+                      <div>
+                        <strong>UU No. 20 Tahun 2023</strong>
+                        <span>Aparatur Sipil Negara</span>
+                      </div>
+                    </li>
+                    <li>
+                      <i class="fas fa-file-contract"></i>
+                      <div>
+                        <strong>PP No. 17 Tahun 2020</strong>
+                        <span>Perubahan atas PP No. 11 Tahun 2017 tentang Manajemen PNS</span>
+                      </div>
+                    </li>
+                    <li>
+                      <i class="fas fa-file-contract"></i>
+                      <div>
+                        <strong>Permenpan RB No. 1 Tahun 2023</strong>
+                        <span>Jabatan Fungsional di Lingkungan Instansi Pemerintah</span>
+                      </div>
+                    </li>
+                    <li>
+                      <i class="fas fa-file-contract"></i>
+                      <div>
+                        <strong>BKN Nomor 05/BKAT/01/2024</strong>
+                        <span>Tata Cara Penetapan Angka Kredit</span>
+                      </div>
+                    </li>
+                    <li>
+                      <i class="fas fa-file-alt"></i>
+                      <div>
+                        <strong>Perbup Kutai Kartanegara</strong>
+                        <span>Jabatan Fungsional Tenaga Kesehatan</span>
+                      </div>
+                    </li>
+                  </ul>
+                </div>
+                <div class="card-footer">
+                  <button class="btn-card-action" onclick="toggleCard(this)">
+                    <span>Lihat Detail</span>
+                    <i class="fas fa-chevron-down"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 2: SOP -->
+            <div class="petunjuk-card card-sop">
+              <div class="card-glow"></div>
+              <div class="card-content">
+                <div class="card-icon-wrapper icon-green"><i class="fas fa-clipboard-list-check"></i></div>
+                <h3 class="card-title">SOP (Standar Operasional Prosedur)</h3>
+                <p class="card-subtitle">Tahapan proses pengajuan PAK</p>
+                <div class="card-body">
+                  <div class="sop-timeline">
+                    <div class="sop-step">
+                      <div class="step-number">1</div>
+                      <div class="step-content">
+                        <h4>Pengajuan Awal</h4>
+                        <p>Pengisi mengisi formulir dan mengupload dokumen pendukung melalui sistem</p>
+                      </div>
+                    </div>
+                    <div class="sop-step">
+                      <div class="step-number">2</div>
+                      <div class="step-content">
+                        <h4>Verifikasi Admin</h4>
+                        <p>Admin memverifikasi kelengkapan dan kesesuaian dokumen</p>
+                      </div>
+                    </div>
+                    <div class="sop-step">
+                      <div class="step-number">3</div>
+                      <div class="step-content">
+                        <h4>Penilaian Angka Kredit</h4>
+                        <p>Tim penilai menentukan angka kredit berdasarkan kriteria</p>
+                      </div>
+                    </div>
+                    <div class="sop-step">
+                      <div class="step-number">4</div>
+                      <div class="step-content">
+                        <h4>Penetapan/Penerbitan</h4>
+                        <p>SK PAK diterbitkan dan dapat diunduh oleh pengguna</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="card-footer">
+                  <button class="btn-card-action" onclick="toggleCard(this)">
+                    <span>Lihat Detail</span>
+                    <i class="fas fa-chevron-down"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 3: Alur Pelayanan -->
+            <div class="petunjuk-card card-alur">
+              <div class="card-glow"></div>
+              <div class="card-content">
+                <div class="card-icon-wrapper icon-purple"><i class="fas fa-diagram-project"></i></div>
+                <h3 class="card-title">Alur Pelayanan</h3>
+                <p class="card-subtitle">Flow proses dari awal hingga selesai</p>
+                <div class="card-body">
+                  <div class="flowchart-container">
+                    <div class="flow-start"><i class="fas fa-user-plus"></i><span>Mulai Pengajuan</span></div>
+                    <div class="flow-arrow"><i class="fas fa-arrow-right"></i></div>
+                    <div class="flow-process"><i class="fas fa-file-signature"></i><span>Isi Formulir</span></div>
+                    <div class="flow-arrow"><i class="fas fa-arrow-right"></i></div>
+                    <div class="flow-process"><i class="fas fa-upload"></i><span>Upload Dokumen</span></div>
+                    <div class="flow-arrow"><i class="fas fa-arrow-right"></i></div>
+                    <div class="flow-decision"><i class="fas fa-search"></i><span>Verifikasi</span></div>
+                    <div class="flow-split">
+                      <div class="flow-branch branch-revisi"><i class="fas fa-undo"></i><span>Revisi</span></div>
+                      <div class="flow-branch branch-setuju"><i class="fas fa-check"></i><span>Disetujui</span></div>
+                    </div>
+                    <div class="flow-arrow"><i class="fas fa-arrow-right"></i></div>
+                    <div class="flow-end"><i class="fas fa-stamp"></i><span>PAK Terbit</span></div>
+                  </div>
+                  <div class="status-legend">
+                    <div class="legend-item"><span class="legend-dot dot-pending"></span><span>Menunggu Verifikasi</span></div>
+                    <div class="legend-item"><span class="legend-dot dot-perbaikan"></span><span>Perlu Perbaikan</span></div>
+                    <div class="legend-item"><span class="legend-dot dot-ditolak"></span><span>Ditolak</span></div>
+                    <div class="legend-item"><span class="legend-dot dot-terbit"></span><span>Diterbitkan</span></div>
+                  </div>
+                </div>
+                <div class="card-footer">
+                  <button class="btn-card-action" onclick="toggleCard(this)">
+                    <span>Lihat Detail</span>
+                    <i class="fas fa-chevron-down"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 4: Kontak PIC -->
+            <div class="petunjuk-card card-kontak">
+              <div class="card-glow"></div>
+              <div class="card-content">
+                <div class="card-icon-wrapper icon-orange"><i class="fas fa-headset"></i></div>
+                <h3 class="card-title">Kontak PIC</h3>
+                <p class="card-subtitle">Person in Charge untuk bantuan teknis</p>
+                <div class="card-body">
+                  <div class="pic-grid">
+                    <div class="pic-card">
+                      <div class="pic-avatar"><i class="fas fa-user-tie"></i></div>
+                      <h4>Koordinator PAK Integrasi</h4>
+                      <p class="pic-name">Tarbiatul Adabiyah, SH., MH</p>
+                      <div class="pic-contact">
+                        <a href="tel:+628125810442" class="pic-link"><i class="fas fa-phone"></i> 0812-5810-442</a>
+                        <a href="mailto:sdmkdinkeskukar2024@gmail.com" class="pic-link"><i class="fas fa-envelope"></i> Email</a>
+                      </div>
+                    </div>
+                    <div class="pic-card">
+                      <div class="pic-avatar"><i class="fas fa-laptop-code"></i></div>
+                      <h4>Admin Sistem</h4>
+                      <p class="pic-name">Tim IT Dinas Kesehatan</p>
+                      <div class="pic-contact">
+                        <a href="tel:+6282130275800" class="pic-link"><i class="fas fa-phone"></i> 0821-3027-5800</a>
+                        <a href="mailto:sdmkdinkeskukar2024@gmail.com" class="pic-link"><i class="fas fa-envelope"></i> Email</a>
+                      </div>
+                    </div>
+                    <div class="pic-card pic-full">
+                      <div class="pic-info-box">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <div>
+                          <strong>Kantor Dinas Kesehatan</strong>
+                          <p>Jl. Cut Nyak Dien No.33, Tenggarong, Kutai Kartanegara, Kalimantan Timur 75513</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="pic-card pic-full">
+                      <div class="pic-info-box info-hours">
+                        <i class="fas fa-clock"></i>
+                        <div>
+                          <strong>Jam Operasional Layanan</strong>
+                          <p>Senin - Jumat: 08.00 - 16.30 WITA<br>Sabtu/Minggu/Libur: Tutup</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="card-footer">
+                  <button class="btn-card-action" onclick="toggleCard(this)">
+                    <span>Lihat Detail</span>
+                    <i class="fas fa-chevron-down"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="quick-help-section">
+            <h2><i class="fas fa-question-circle"></i> Butuh Bantuan Lebih Lanjut?</h2>
+            <div class="help-options">
+              <a href="#" class="help-btn help-faq" onclick="showHelpModal('faq'); return false;">
+                <i class="fas fa-comments"></i>
+                <span>FAQ - Pertanyaan Umum</span>
+              </a>
+              <a href="#" class="help-btn help-video" onclick="showHelpModal('video'); return false;">
+                <i class="fas fa-play-circle"></i>
+                <span>Video Tutorial</span>
+              </a>
+              <a href="#" class="help-btn help-download" onclick="showHelpModal('download'); return false;">
+                <i class="fas fa-download"></i>
+                <span>Unduh Panduan PDF</span>
+              </a>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============================================
+             ADMIN PANEL
+             ============================================ -->
+        <section class="page-section" id="adminPage">
+          <div class="filter-section">
+            <div class="filter-grid">
+              <div class="filter-group">
+                <label class="filter-label">Pencarian</label>
+                <div class="search-wrapper">
+                  <i class="fas fa-search"></i>
+                  <input type="text" class="search-input" id="adminSearch" placeholder="Cari data...">
+                </div>
+              </div>
+              <div class="filter-group">
+                <label class="filter-label">Jenis JF</label>
+                <select class="filter-select" id="adminFilterJF">
+                  <option value="">Semua Jenis JF</option>
+                  <option value="Perawat">Perawat</option>
+                  <option value="Bidan">Bidan</option>
+                  <option value="Dokter">Dokter</option>
+                  <option value="Dokter Gigi">Dokter Gigi</option>
+                  <option value="Apoteker">Apoteker</option>
+                  <option value="Asisten Apoteker">Asisten Apoteker</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label class="filter-label">Status</label>
+                <select class="filter-select" id="adminFilterStatus">
+                  <option value="">Semua Status</option>
+                  <option value="Menunggu">Menunggu</option>
+                  <option value="Perbaikan">Perbaikan</option>
+                  <option value="Ditolak">Ditolak</option>
+                  <option value="Terbit">Terbit</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label class="filter-label">Satuan Kerja</label>
+                <select class="filter-select" id="adminFilterSatker">
+                  <option value="">Semua Satuan Kerja</option>
+                  <option value="Dinas Kesehatan">Dinas Kesehatan</option>
+                  <option value="UPTD Puskesmas Samboja">UPTD Puskesmas Samboja</option>
+                  <option value="RSUD Aji Muhammad Parikesit">RSUD Aji Muhammad Parikesit</option>
+                  <option value="RSUD Aji Muhammad Idris">RSUD Aji Muhammad Idris</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="table-container">
+            <div class="table-header">
+              <h3 class="table-title"><i class="fas fa-cog"></i> Kelola Data Pengajuan</h3>
+              <div style="display: flex; gap: 8px;">
+                <button class="btn btn-success btn-sm btn-export" onclick="exportExcel()">
+                  <i class="fas fa-file-excel"></i> Export
+                </button>
+                <button class="btn btn-primary btn-sm" onclick="refreshAdmin()">
+                  <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+              </div>
+            </div>
+            <div class="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>No</th>
+                    <th>Nama Lengkap</th>
+                    <th>NIP</th>
+                    <th>Pangkat/Gol</th>
+                    <th>Satuan Kerja</th>
+                    <th>Jenis JF</th>
+                    <th>Status</th>
+                    <th>Update Terakhir</th>
+                    <th>Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="adminTableBody"></tbody>
+              </table>
+            </div>
+            <div class="pagination-container">
+              <div class="pagination-info" id="adminPaginationInfo">Menampilkan 0 - 0 dari 0 data</div>
+              <div class="pagination-controls" id="adminPagination"></div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <!-- ============================================
+       MODAL: DETAIL
+       ============================================ -->
+  <div class="modal-overlay" id="detailModal">
+    <div class="modal" style="max-width: 700px;">
+      <div class="modal-header">
+        <h3 class="modal-title"><i class="fas fa-eye"></i> Detail Pengajuan</h3>
+        <button class="modal-close" onclick="closeModal('detailModal')"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body" id="detailModalBody"></div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" onclick="closeModal('detailModal')">
+          <i class="fas fa-check"></i> Tutup
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================
+       MODAL: UPDATE STATUS
+       ============================================ -->
+  <div class="modal-overlay" id="statusModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title"><i class="fas fa-edit"></i> Update Status</h3>
+        <button class="modal-close" onclick="closeModal('statusModal')"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group" style="margin-bottom: 20px;">
+          <label class="form-label">Status</label>
+          <select class="form-select" id="updateStatus" style="width: 100%;">
+            <option value="Menunggu">Menunggu</option>
+            <option value="Perbaikan">Perbaikan</option>
+            <option value="Ditolak">Ditolak</option>
+            <option value="Terbit">Terbit</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Catatan Admin</label>
+          <textarea class="form-input" id="updateCatatan" rows="4" placeholder="Masukkan catatan..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" onclick="submitStatusUpdate()">
+          <i class="fas fa-save"></i> Simpan
+        </button>
+        <button class="btn btn-warning" onclick="closeModal('statusModal')">
+          <i class="fas fa-times"></i> Batal
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================
+       MODAL: EDIT DATA
+       ============================================ -->
+  <div class="modal-overlay" id="editModal">
+    <div class="modal" style="max-width: 700px;">
+      <div class="modal-header">
+        <h3 class="modal-title"><i class="fas fa-edit"></i> Edit Data</h3>
+        <button class="modal-close" onclick="closeModal('editModal')"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
+          <div class="form-group">
+            <label class="form-label">Nama Lengkap</label>
+            <input type="text" class="form-input" id="editNama">
+          </div>
+          <div class="form-group">
+            <label class="form-label">NIP</label>
+            <input type="text" class="form-input" id="editNIP">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Pangkat/Gol</label>
+            <select class="form-select" id="editPangkatGol" style="width: 100%;">
+              <option value="Pembina - IV/a Ahli Madya">Pembina - IV/a Ahli Madya</option>
+              <option value="Penata Muda - III/a Ahli Pertama">Penata Muda - III/a Ahli Pertama</option>
+              <option value="Penata Tk. I - III/d Penyelia">Penata Tk. I - III/d Penyelia</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Jenis JF</label>
+            <select class="form-select" id="editJenisJF" style="width: 100%;">
+              <option value="Perawat">Perawat</option>
+              <option value="Bidan">Bidan</option>
+              <option value="Dokter">Dokter</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Jenjang JF</label>
+            <select class="form-select" id="editJenjangJF" style="width: 100%;">
+              <option value="Terampil">Terampil</option>
+              <option value="Mahir">Mahir</option>
+              <option value="Penyelia">Penyelia</option>
+              <option value="Pertama">Pertama</option>
+              <option value="Muda">Muda</option>
+              <option value="Madya">Madya</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Satuan Kerja</label>
+            <select class="form-select" id="editSatuanKerja" style="width: 100%;">
+              <option value="Dinas Kesehatan">Dinas Kesehatan</option>
+              <option value="UPTD Puskesmas Samboja">UPTD Puskesmas Samboja</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">TMT Pangkat</label>
+            <input type="date" class="form-input" id="editTmtpangkat">
+          </div>
+          <div class="form-group">
+            <label class="form-label">TMT JF</label>
+            <input type="date" class="form-input" id="editTmtjf">
+          </div>
+          <div class="form-group" style="grid-column: 1 / -1;">
+            <label class="form-label">Masa Kerja Gol</label>
+            <input type="text" class="form-input" id="editMasaKerjaGol" placeholder="Contoh: 05 Tahun 03 Bulan">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" onclick="submitEdit()">
+          <i class="fas fa-save"></i> Simpan Perubahan
+        </button>
+        <button class="btn btn-warning" onclick="closeModal('editModal')">
+          <i class="fas fa-times"></i> Batal
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================
+       MODAL: DELETE CONFIRM
+       ============================================ -->
+  <div class="modal-overlay" id="deleteModal">
+    <div class="modal" style="max-width: 400px;">
+      <div class="modal-body">
+        <div class="confirm-dialog">
+          <div class="confirm-icon danger"><i class="fas fa-exclamation-triangle"></i></div>
+          <h3 style="margin-bottom: 12px;">Hapus Data?</h3>
+          <p class="confirm-text">Apakah Anda yakin ingin menghapus data ini?</p>
+          <p class="confirm-subtext">Tindakan ini tidak dapat dibatalkan.</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-danger" onclick="confirmDelete()">
+          <i class="fas fa-trash"></i> Hapus
+        </button>
+        <button class="btn btn-warning" onclick="closeModal('deleteModal')">
+          <i class="fas fa-times"></i> Batal
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================
+       MODAL: VIEW DOCUMENT
+       ============================================ -->
+  <div class="modal-overlay" id="documentModal">
+    <div class="modal" style="max-width: 900px;">
+      <div class="modal-header">
+        <h3 class="modal-title"><i class="fas fa-file-pdf"></i> Preview Dokumen</h3>
+        <button class="modal-close" onclick="closeModal('documentModal')"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <iframe id="documentViewer" style="width: 100%; height: 500px; border: none; border-radius: 8px;"></iframe>
+      </div>
+      <div class="modal-footer">
+        <a href="#" target="_blank" class="btn btn-primary" id="documentLink">
+          <i class="fas fa-external-link-alt"></i> Buka di Tab Baru
+        </a>
+        <button class="btn btn-warning" onclick="closeModal('documentModal')">
+          <i class="fas fa-times"></i> Tutup
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================
+       LIGHTBOX FOR PDF / IMAGE PREVIEW
+       ============================================ -->
+  <div class="lightbox-overlay" id="lightbox">
+    <button class="lightbox-close" onclick="closeLightbox()"><i class="fas fa-times"></i></button>
+    <div class="lightbox-content">
+      <iframe id="lightboxIframe" style="width: 900px; height: 600px; border: none; border-radius: 8px;"></iframe>
+    </div>
+  </div>
+
+  <!-- ============================================
+       PAKTI JAVASCRIPT MODULES (modular)
+       ============================================ -->
+  <!-- 1. Config & Supabase init -->
+  <script src="js/config.js"></script>
+
+  <!-- 2. Utility & helper functions -->
+  <script src="js/utils.js"></script>
+
+  <!-- 3. Toast notifications -->
+  <script src="js/toast.js"></script>
+
+  <!-- 4. Modal helpers -->
+  <script src="js/modals.js"></script>
+
+  <!-- 5. Demo users (offline fallback) -->
+  <script src="js/demo-users.js"></script>
+
+  <!-- 6. Supabase client wrapper (API) -->
+  <script src="js/supabase-client.js"></script>
+
+  <!-- 7. Authentication -->
+  <script src="js/auth.js"></script>
+
+  <!-- 8. Navigation between pages -->
+  <script src="js/navigation.js"></script>
+
+  <!-- 9. Dashboard page logic -->
+  <script src="js/dashboard.js"></script>
+
+  <!-- 10. Formulir pengajuan logic -->
+  <script src="js/formulir.js"></script>
+
+  <!-- 11. Tracking page logic -->
+  <script src="js/tracking.js"></script>
+
+  <!-- 12. PAK Terbit page logic -->
+  <script src="js/pak-terbit.js"></script>
+
+  <!-- 13. Cek status page logic -->
+  <script src="js/cek-status.js"></script>
+
+  <!-- 14. Petunjuk page logic -->
+  <script src="js/petunjuk.js"></script>
+
+  <!-- 15. Admin panel logic -->
+  <script src="js/admin.js"></script>
+
+  <!-- 16. Pagination helper -->
+  <script src="js/pagination.js"></script>
+
+  <!-- 17. Main app init -->
+  <script src="js/app.js"></script>
+
+  <!-- 18. Splash screen (runs last, triggers initApp on completion) -->
+  <script src="js/splash.js"></script>
+</body>
+</html>

@@ -1,0 +1,170 @@
+/* ============================================
+   PAKTI - Responsive Design
+   ============================================ */
+@media (max-width: 1024px) {
+  .charts-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .petunjuk-cards-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .flowchart-container {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .flow-arrow {
+    transform: rotate(90deg);
+  }
+
+  .flow-split {
+    flex-direction: row;
+  }
+}
+
+@media (max-width: 768px) {
+  :root {
+    --sidebar-width: 0px;
+  }
+
+  .sidebar {
+    transform: translateX(-100%);
+    width: 260px;
+  }
+
+  .sidebar.active {
+    transform: translateX(0);
+  }
+
+  .main-content {
+    margin-left: 0;
+  }
+
+  .mobile-menu-btn {
+    display: flex !important;
+  }
+
+  .filter-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .pagination-container {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .petunjuk-header {
+    padding: 24px;
+  }
+
+  .petunjuk-header-content {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .petunjuk-header-text h1 {
+    font-size: 1.5rem;
+  }
+
+  .pic-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .status-legend {
+    grid-template-columns: 1fr;
+  }
+
+  .help-options {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .help-btn {
+    min-width: auto;
+  }
+
+  .search-input-wrapper {
+    flex-direction: column;
+  }
+
+  .btn-search-pak {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .pak-card-header {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .pak-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pak-doc-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .btn-preview-pak,
+  .btn-download-pak {
+    justify-content: center;
+  }
+
+  .splash-title {
+    font-size: 2.5rem;
+    letter-spacing: 4px;
+  }
+
+  .splash-subtitle {
+    font-size: 0.8rem;
+    letter-spacing: 2px;
+  }
+
+  .splash-logo-ring {
+    width: 110px;
+    height: 110px;
+  }
+
+  .splash-logo-icon {
+    font-size: 45px;
+  }
+
+  .splash-progress-container {
+    width: 250px;
+  }
+
+  .splash-footer {
+    padding: 0 20px;
+    font-size: 0.7rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .content-area {
+    padding: 16px;
+  }
+
+  .form-container {
+    padding: 20px;
+  }
+
+  .splash-title {
+    font-size: 2rem;
+    letter-spacing: 2px;
+  }
+}
