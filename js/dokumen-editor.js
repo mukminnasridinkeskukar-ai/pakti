@@ -1,37 +1,40 @@
 /* ============================================
  * PAKTI - Document Editor (Word-like)
  * ============================================
- * Menggunakan TinyMCE sebagai rich text editor
- * - Mode Preview & Edit
- * - Toolbar lengkap (Font, Paragraph, Insert, Format)
- * - Halaman A4 dengan margin visual
- * - Autosave ke Supabase (tabel dokumen_pak)
- * - Version History dengan restore
- * - Export PDF (print) & DOCX
+ * Menggunakan TinyMCE 7 dengan menubar & toolbar NATIVE
+ * Semua tombol BERFUNGSI NYATA (bukan dummy)
+ *
+ * Fitur:
+ * - Edit, View, Insert, Format, Table, Tools menu (native TinyMCE)
+ * - Toolbar: Font, Size, Bold, Italic, Alignment, List, Table, Image, dll
+ * - Keyboard shortcuts (Ctrl+B/I/U/S/Z/Y/F/H/A)
+ * - Autosave ke Supabase (debounce 2 detik)
+ * - Version history dengan restore
+ * - Export PDF (browser print)
+ * - Export DOCX (html-docx-js library)
+ * - Close dengan prompt unsaved changes
  * ============================================ */
 
 let editorInstance = null;
-let editorCurrentData = null;        // data pegawai yang sedang dibuka
-let editorDokumenId = null;          // ID dokumen di database (null jika belum disimpan)
+let editorCurrentData = null;
+let editorDokumenId = null;
 let editorPengaturanHalaman = {
   size: 'A4',
   orientation: 'portrait',
-  marginTop: 15,
-  marginBottom: 15,
-  marginLeft: 18,
-  marginRight: 18,
-  lineHeight: 1.5,
+  marginTop: 25,
+  marginBottom: 25,
+  marginLeft: 30,
+  marginRight: 25,
+  lineHeight: 1.15,
   paragraphSpacing: 8,
 };
 let editorAutoSaveTimer = null;
 let editorIsSaving = false;
 let editorLastSavedContent = '';
+let editorHasUnsavedChanges = false;
 
 /* ============================================
- * BUKA EDITOR DARI PREVIEW
- * ============================================
- * Dipanggil dari tombol "Edit Dokumen" di preview PAK
- * @param {object} pakData - data PAK yang sudah di-generate
+ * BUKA EDITOR
  * ============================================ */
 async function openDocumentEditor(pakData) {
   if (!pakData) {
@@ -39,7 +42,6 @@ async function openDocumentEditor(pakData) {
     return;
   }
 
-  // Cek apakah user boleh edit (admin only)
   if (!isCurrentUserAdmin()) {
     toastError('Anda tidak memiliki hak akses untuk mengedit dokumen.');
     return;
@@ -56,7 +58,7 @@ async function openDocumentEditor(pakData) {
   modal.className = 'editor-modal active';
 
   modal.innerHTML = `
-    <!-- Header -->
+    <!-- Header dengan tombol aksi -->
     <div class="editor-header">
       <div class="editor-title">
         <i class="fas fa-file-edit"></i>
@@ -74,26 +76,23 @@ async function openDocumentEditor(pakData) {
           <button class="editor-btn" onclick="openVersionHistory()" title="Riwayat Versi">
             <i class="fas fa-history"></i> <span>Versi</span>
           </button>
-          <button class="editor-btn btn-primary" onclick="saveDokumenNow(false)" title="Simpan dokumen ke database" style="background: var(--success); color: white;">
+          <button class="editor-btn" onclick="saveDokumenManual()" title="Simpan (Ctrl+S)" style="background: var(--success); color: white;">
             <i class="fas fa-save"></i> <span>Simpan</span>
           </button>
-          <button class="editor-btn btn-success" onclick="exportDokumenPDF()" title="Export PDF">
+          <button class="editor-btn" onclick="exportDokumenPDF()" title="Export PDF" style="background: var(--danger); color: white;">
             <i class="fas fa-file-pdf"></i> <span>PDF</span>
           </button>
-          <button class="editor-btn btn-primary" onclick="exportDokumenDOCX()" title="Export DOCX">
+          <button class="editor-btn" onclick="exportDokumenDOCX()" title="Export DOCX" style="background: #2563eb; color: white;">
             <i class="fas fa-file-word"></i> <span>DOCX</span>
           </button>
-          <button class="editor-btn btn-danger" onclick="closeDocumentEditor()" title="Tutup">
+          <button class="editor-btn" onclick="closeDocumentEditor()" title="Tutup" style="background: #64748b; color: white;">
             <i class="fas fa-times"></i> <span>Tutup</span>
           </button>
         </div>
       </div>
     </div>
 
-    <!-- Toolbar Container (TinyMCE akan render di sini) -->
-    <div class="editor-toolbar-container" id="editorToolbarContainer"></div>
-
-    <!-- Body - Halaman A4 -->
+    <!-- Editor body - TinyMCE akan render di sini -->
     <div class="editor-body" id="editorBody">
       <div class="editor-loading" id="editorLoading">
         <div class="spinner"></div>
@@ -104,7 +103,7 @@ async function openDocumentEditor(pakData) {
     <!-- Footer -->
     <div class="editor-footer">
       <div class="editor-footer-info">
-        <span><i class="fas fa-file"></i> <span id="editorPageCount">1 halaman</span></span>
+        <span><i class="fas fa-file"></i> <span id="editorPageCount">—</span></span>
         <span><i class="fas fa-user"></i> <span id="editorEditor">${escapeHtml(getCurrentUser()?.nama || 'Admin')}</span></span>
         <span><i class="fas fa-clock"></i> <span id="editorTime">—</span></span>
       </div>
@@ -113,7 +112,7 @@ async function openDocumentEditor(pakData) {
       </div>
     </div>
 
-    <!-- Settings Panel (hidden by default) -->
+    <!-- Settings Panel -->
     <div class="editor-settings-panel" id="editorSettingsPanel">
       <div class="editor-settings-header">
         <h3><i class="fas fa-cog"></i> Pengaturan Halaman</h3>
@@ -121,12 +120,10 @@ async function openDocumentEditor(pakData) {
           <i class="fas fa-times"></i>
         </button>
       </div>
-      <div class="editor-settings-body" id="editorSettingsBody">
-        <!-- Akan diisi oleh generateSettingsHTML() -->
-      </div>
+      <div class="editor-settings-body" id="editorSettingsBody"></div>
     </div>
 
-    <!-- Version History Panel (hidden by default) -->
+    <!-- Version History Panel -->
     <div class="editor-settings-panel" id="versionHistoryPanel">
       <div class="editor-settings-header">
         <h3><i class="fas fa-history"></i> Riwayat Versi Dokumen</h3>
@@ -136,9 +133,7 @@ async function openDocumentEditor(pakData) {
       </div>
       <div class="editor-settings-body">
         <div id="versionHistoryList" class="editor-versions-list">
-          <p style="text-align: center; color: var(--text-light); padding: 20px;">
-            Memuat riwayat...
-          </p>
+          <p style="text-align: center; color: var(--text-light); padding: 20px;">Memuat riwayat...</p>
         </div>
       </div>
     </div>
@@ -147,75 +142,64 @@ async function openDocumentEditor(pakData) {
   document.body.appendChild(modal);
   document.body.style.overflow = 'hidden';
 
-  // Update meta info
+  // Update meta
   const metaEl = document.getElementById('editorMeta');
   if (metaEl && pakData['Nama Lengkap dengan Gelar']) {
     metaEl.textContent = `${pakData['NIP'] || ''} - ${pakData['Nama Lengkap dengan Gelar']}`;
   }
 
-  // Cek apakah dokumen sudah ada di database
+  // Cek dokumen existing di database
   try {
     const existing = await fetchDokumenByDataMaster(pakData._id, pakData['NIP']);
     if (existing) {
       editorDokumenId = existing.id;
       editorLastSavedContent = existing.konten || '';
       if (existing.pengaturan_halaman) {
-        editorPengaturanHalaman = {
-          ...editorPengaturanHalaman,
-          ...existing.pengaturan_halaman,
-        };
+        editorPengaturanHalaman = { ...editorPengaturanHalaman, ...existing.pengaturan_halaman };
       }
       updateEditorVersionDisplay(existing.versi || 1);
-      console.log('[Editor] Dokumen ditemukan di DB, versi:', existing.versi);
+      console.log('[Editor] Dokumen ditemukan, versi:', existing.versi);
     } else {
       editorDokumenId = null;
       editorLastSavedContent = '';
       updateEditorVersionDisplay(1);
-      console.log('[Editor] Dokumen baru, akan di-insert saat save');
     }
   } catch (err) {
-    console.warn('[Editor] Gagal cek dokumen existing:', err.message);
+    console.warn('[Editor] Gagal cek dokumen:', err.message);
     editorDokumenId = null;
   }
 
   // Render settings panel
   renderEditorSettings();
 
-  // Inisialisasi TinyMCE
+  // Init TinyMCE
   await initTinyMCEEditor();
 }
 
 /* ============================================
- * INIT TINYMCE EDITOR
- * ============================================
- */
+ * INIT TINYMCE - dengan menubar & toolbar NATIVE
+ * ============================================ */
 async function initTinyMCEEditor() {
   const editorBody = document.getElementById('editorBody');
-
-  // Hapus loading
   const loading = document.getElementById('editorLoading');
   if (loading) loading.remove();
 
-  // Tentukan konten awal:
-  // - Jika sudah ada di DB → pakai konten DB
-  // - Jika belum → pakai konten dari preview PAK yang sudah di-generate
+  // Tentukan konten awal
   let initialContent;
   if (editorLastSavedContent) {
     initialContent = editorLastSavedContent;
     console.log('[Editor] Memuat konten dari database');
   } else {
-    // Ambil dari preview PAK yang sudah di-generate
+    // Ambil dari preview PAK
     const printArea = document.getElementById('pakPrintArea');
     if (printArea) {
-      // Ambil hanya inner content (tanpa .pak-page wrapper)
       const contents = printArea.querySelectorAll('.pak-content');
       if (contents.length > 0) {
-        // Gabungkan 4 dokumen jadi 1, dipisah page break
         let html = '';
         contents.forEach((c, idx) => {
           html += c.innerHTML;
           if (idx < contents.length - 1) {
-            html += '<div style="page-break-after: always; break-after: page;">&nbsp;</div>';
+            html += '<hr class="mce-pagebreak" />';
           }
         });
         initialContent = html;
@@ -228,53 +212,77 @@ async function initTinyMCEEditor() {
     }
   }
 
-  // Buat container untuk TinyMCE
-  const pageClass = editorPengaturanHalaman.orientation === 'landscape'
-    ? 'a4-landscape'
-    : 'a4-portrait';
+  // Halaman A4 container
+  const pageClass = editorPengaturanHalaman.orientation === 'landscape' ? 'a4-landscape' : 'a4-portrait';
 
   editorBody.innerHTML = `
-    <div class="editor-page-container ${pageClass} has-margins" id="editorPageContainer">
+    <div class="editor-page-container ${pageClass}" id="editorPageContainer">
       <textarea id="tinyMCEEditor">${escapeHtml(initialContent)}</textarea>
     </div>
   `;
 
-  // Cek apakah TinyMCE sudah dimuat
   if (typeof window.tinymce === 'undefined') {
-    console.error('[Editor] TinyMCE belum dimuat. Pastikan CDN script ada di index.html');
     toastError('Library editor belum dimuat. Refresh halaman.');
     return;
   }
 
-  // Inisialisasi TinyMCE
+  // Hapus instance lama jika ada
+  if (tinymce.get('tinyMCEEditor')) {
+    tinymce.get('tinyMCEEditor').remove();
+  }
+
+  const p = editorPengaturanHalaman;
+
+  // Inisialisasi TinyMCE dengan konfigurasi lengkap
   tinymce.init({
     selector: '#tinyMCEEditor',
-    // Hilangkan warning license - pakai GPL license (open source)
     license_key: 'gpl',
-
-    // Bahasa default (TinyMCE 7 community edition hanya English)
-    // Jangan set language & language_url supaya tidak error load
 
     height: '100%',
     width: '100%',
-    autoresize: false,
+    min_height: 500,
+    autoresize_bottom_margin: 20,
     resize: false,
     branding: false,
     promotion: false,
+    elementpath: false,
 
-    // Toolbar & menu - mirip Microsoft Word (hanya plugin yang tersedia)
+    // Menubar NATIVE - semua menu berfungsi
     menubar: 'file edit view insert format table tools',
+
+    // Menu items - semua TERHUBUNG ke fungsi TinyMCE
     menu: {
-      file: { title: 'File', items: 'newdocument restoredraft | preview | print' },
-      edit: { title: 'Edit', items: 'undo redo | cut copy paste pastetext | selectall searchreplace' },
-      view: { title: 'View', items: 'code | visualaid visualchars visualblocks | preview' },
-      insert: { title: 'Insert', items: 'image link media | charmap | codesample inserttable | pagebreak anchor' },
-      format: { title: 'Format', items: 'bold italic underline strikethrough superscript subscript codeformat | formats blockformats fontfamily fontsize align lineheight | forecolor backcolor | removeformat' },
-      table: { title: 'Table', items: 'inserttable | cell row column | tableprops deletetable' },
-      tools: { title: 'Tools', items: 'wordcount | code' },
+      file: {
+        title: 'File',
+        items: 'newdocument restoredraft | preview | exportpdf exportdocx | print',
+      },
+      edit: {
+        title: 'Edit',
+        items: 'undo redo | cut copy paste pastetext | selectall searchreplace',
+      },
+      view: {
+        title: 'View',
+        items: 'code visualblocks visualchars | fullscreen preview',
+      },
+      insert: {
+        title: 'Insert',
+        items: 'inserttable | image link media | charmap | insertdatetime | pagebreak hr | anchor',
+      },
+      format: {
+        title: 'Format',
+        items: 'bold italic underline strikethrough superscript subscript | formats blockformats fontfamily fontsize | align lineheight | forecolor backcolor | removeformat',
+      },
+      table: {
+        title: 'Table',
+        items: 'inserttable | cell row column | tableprops deletetable',
+      },
+      tools: {
+        title: 'Tools',
+        items: 'wordcount | code',
+      },
     },
 
-    // Plugin yang tersedia di TinyMCE 7 Community Edition
+    // Plugin yang tersedia di community edition
     plugins: [
       'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
       'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
@@ -282,20 +290,19 @@ async function initTinyMCEEditor() {
       'pagebreak', 'quickbars', 'autoresize',
     ].join(' '),
 
-    // Toolbar - group dengan separator untuk readability
+    // Toolbar - semua tombol BERFUNGSI (native TinyMCE)
     toolbar:
       'undo redo | ' +
-      'blocks fontfamily fontsize | ' +
-      'bold italic underline strikethrough superscript subscript | ' +
+      'styles fontfamily fontsize | ' +
+      'bold italic underline strikethrough | ' +
       'forecolor backcolor | ' +
       'alignleft aligncenter alignright alignjustify | ' +
       'bullist numlist outdent indent lineheight | ' +
-      'table image link media pagebreak | ' +
+      'table image link pagebreak charmap | ' +
       'removeformat fullscreen help',
 
     toolbar_mode: 'sliding',
     toolbar_sticky: true,
-    toolbar_sticky_offset: 0,
 
     // Font options
     font_family_formats:
@@ -308,188 +315,134 @@ async function initTinyMCEEditor() {
       'Tahoma=Tahoma,sans-serif;' +
       'Poppins=Poppins,sans-serif;',
 
-    font_size_formats:
-      '8pt 9pt 10pt 10.5pt 11pt 12pt 13pt 14pt 16pt 18pt 20pt 24pt 28pt 32pt 36pt',
+    font_size_formats: '8pt 9pt 10pt 11pt 12pt 14pt 16pt 18pt 20pt 24pt 28pt 32pt 36pt 48pt',
 
-    line_height_formats: '1 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2 2.5 3',
+    line_height_formats: '1 1.1 1.15 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2 2.5 3',
 
     block_formats:
       'Paragraph=p; ' +
       'Heading 1=h1; Heading 2=h2; Heading 3=h3; Heading 4=h4; ' +
-      'Preformatted=pre; ' +
-      'Div=div',
+      'Preformatted=pre; Div=div',
 
-    // Default styles - dokumen pemerintah (jarak nyaman)
-    // Margin A4 diterapkan via padding body
+    // Content style - dokumen pemerintah dengan margin A4
     content_style: `
       body {
         font-family: 'Times New Roman', Times, serif;
         font-size: 12pt;
-        line-height: 1.5;
+        line-height: ${p.lineHeight};
         color: #000;
         background: #fff;
         margin: 0;
-        padding: ${editorPengaturanHalaman.marginTop || 15}mm ${editorPengaturanHalaman.marginRight || 18}mm ${editorPengaturanHalaman.marginBottom || 15}mm ${editorPengaturanHalaman.marginLeft || 18}mm;
+        padding: ${p.marginTop}mm ${p.marginRight}mm ${p.marginBottom}mm ${p.marginLeft}mm;
         box-sizing: border-box;
       }
-      p {
-        margin: 0 0 ${editorPengaturanHalaman.paragraphSpacing || 8}pt 0;
-        line-height: ${editorPengaturanHalaman.lineHeight || 1.5};
-      }
-      h1, h2, h3, h4, h5, h6 {
-        margin: 12pt 0 6pt 0;
-        line-height: 1.3;
-      }
-      h1 { font-size: 18pt; }
-      h2 { font-size: 14pt; }
-      h3 { font-size: 12pt; }
-      h4 { font-size: 11pt; }
-      table {
-        border-collapse: collapse;
-        width: 100%;
-        margin: 6pt 0;
-      }
-      td, th {
-        border: 1px solid #000;
-        padding: 4px 6px;
-        vertical-align: top;
-        line-height: 1.3;
-      }
-      ul, ol {
-        margin: 6pt 0;
-        padding-left: 24pt;
-      }
-      img {
-        max-width: 100%;
-        height: auto;
-        margin: 6pt 0;
-      }
-      .mce-pagebreak {
-        border-top: 2px dashed #999;
-        border-bottom: 2px dashed #999;
-        background: #f8fafc;
-        margin: 20px 0;
-        padding: 10px;
-        text-align: center;
-        color: #999;
-        font-size: 10pt;
-      }
+      p { margin: 0 0 ${p.paragraphSpacing}pt 0; line-height: ${p.lineHeight}; }
+      h1 { font-size: 18pt; margin: 12pt 0 6pt 0; }
+      h2 { font-size: 14pt; margin: 12pt 0 6pt 0; }
+      h3 { font-size: 12pt; margin: 10pt 0 5pt 0; }
+      table { border-collapse: collapse; width: 100%; margin: 6pt 0; }
+      td, th { border: 1px solid #000; padding: 4px 6px; vertical-align: top; }
+      ul, ol { margin: 6pt 0; padding-left: 24pt; }
+      img { max-width: 100%; height: auto; }
+      hr { border: none; border-top: 1px solid #999; margin: 12pt 0; }
+      .mce-pagebreak { border: 2px dashed #999; background: #f8fafc; padding: 10px; text-align: center; }
     `,
 
     // Page break
     pagebreak_separator: '<!-- pagebreak -->',
     pagebreak_split_block: true,
 
-    // Save plugin - autosave ke Supabase
-    save_onsavecallback: () => saveDokumenNow(),
+    // Table defaults
+    table_default_attributes: { border: '1', cellspacing: '0', cellpadding: '4' },
+    table_default_styles: { 'border-collapse': 'collapse', width: '100%' },
+    table_toolbar: 'tableprops cellprops | tableinsertrowbefore tableinsertrowafter tabledeleterow | tableinsertcolbefore tableinsertcolafter tabledeletecol | tablemergecells tablesplitcells',
 
-    // Image upload - ke Supabase Storage
-    images_upload_url: 'upload-handler',
+    // Image upload
     images_upload_handler: (blobInfo, progress) => uploadImageToStorage(blobInfo, progress),
 
-    // Table default styles
-    table_default_attributes: {
-      border: '1',
-      cellspacing: '0',
-      cellpadding: '4',
-    },
-    table_default_styles: {
-      'border-collapse': 'collapse',
-      width: '100%',
-    },
+    // Quickbars - context menu (klik kanan)
+    quickbars_selection_toolbar: 'bold italic underline | blocks | bullist numlist',
+    quickbars_insert_toolbar: 'image table pagebreak hr',
+    contextmenu: 'link image table | cell row column | paste | undo redo',
 
-    // Setup callback
+    // Skin
+    skin: 'oxide',
+    content_css: false,
+    statusbar: false,
+
+    // Setup - custom buttons & shortcuts
     setup: (editor) => {
       editorInstance = editor;
 
+      // Custom menu items untuk File menu
+      editor.ui.registry.addMenuItem('exportpdf', {
+        text: 'Export PDF',
+        icon: 'export',
+        onAction: () => exportDokumenPDF(),
+      });
+
+      editor.ui.registry.addMenuItem('exportdocx', {
+        text: 'Export DOCX',
+        icon: 'export',
+        onAction: () => exportDokumenDOCX(),
+      });
+
+      // Keyboard shortcuts
+      editor.addShortcut('ctrl+s', 'Simpan dokumen', () => {
+        saveDokumenManual();
+      });
+
       editor.on('init', () => {
         console.log('[Editor] TinyMCE initialized');
-        // Hide loading
         const loadingEl = document.getElementById('editorLoading');
         if (loadingEl) loadingEl.remove();
 
-        // Update save status
         updateEditorSaveStatus('saved');
-
-        // Update page count
         updateEditorPageCount();
-
-        // Start autosave timer
         startAutoSave();
+
+        // Focus editor
+        setTimeout(() => editor.focus(), 100);
       });
 
-      // Autosave on content change (debounced)
-      editor.on('input change keyup', () => {
+      // Track changes untuk autosave
+      editor.on('input change keyup setContent', () => {
+        editorHasUnsavedChanges = true;
         updateEditorSaveStatus('unsaved');
         scheduleAutoSave();
         updateEditorPageCount();
       });
-
-      // Update word count
-      editor.on('keyup setcontent', () => {
-        updateEditorPageCount();
-      });
     },
-
-    // Skin - oxide (light) supaya konsisten dengan dokumen A4 putih
-    skin: 'oxide',
-    content_css: false,
-
-    // Status bar
-    statusbar: false,
-
-    // Quickbars - context menu
-    quickbars_selection_toolbar: 'bold italic underline | blocks | bullist numlist',
-    quickbars_insert_toolbar: 'image table pagebreak',
-    contextmenu: 'link image table | cell row column | paste | undo redo',
-
-    // Autoresize - fit content
-    autoresize_bottom_margin: 20,
-    autoresize_overflow_padding: 20,
-
-    // Branding
-    branding: false,
-    promotion: false,
-    elementpath: false,
   });
 }
 
 /* ============================================
- * AUTOSAVE - simpan otomatis ke Supabase
- * ============================================
- */
+ * AUTOSAVE - debounce 2 detik
+ * ============================================ */
 function scheduleAutoSave() {
-  // Clear timer sebelumnya
-  if (editorAutoSaveTimer) {
-    clearTimeout(editorAutoSaveTimer);
-  }
-
-  // Schedule autosave dalam 3 detik setelah perubahan terakhir
-  editorAutoSaveTimer = setTimeout(() => {
-    saveDokumenNow(true); // true = autosave mode
-  }, 3000);
+  if (editorAutoSaveTimer) clearTimeout(editorAutoSaveTimer);
+  editorAutoSaveTimer = setTimeout(() => saveDokumenNow(true), 2000);
 }
 
 function startAutoSave() {
-  console.log('[Editor] Autosave dimulai (interval: 30 detik)');
-  // Auto-save setiap 30 detik jika ada perubahan
+  // Backup autosave setiap 30 detik
   setInterval(() => {
-    if (editorInstance && !editorIsSaving) {
-      const currentContent = editorInstance.getContent();
-      if (currentContent !== editorLastSavedContent) {
-        saveDokumenNow(true);
-      }
+    if (editorInstance && !editorIsSaving && editorHasUnsavedChanges) {
+      saveDokumenNow(true);
     }
   }, 30000);
 }
 
-async function saveDokumenNow(isAutosave = false) {
+function saveDokumenManual() {
+  saveDokumenNow(false);
+}
+
+async function saveDokumenNow(isAutosave) {
   if (!editorInstance || editorIsSaving) return;
 
   if (!isSupabaseReady()) {
     updateEditorSaveStatus('error', 'Supabase belum dikonfigurasi');
-    if (isAutosave) return;
-    toastError('Supabase belum dikonfigurasi');
+    if (!isAutosave) toastError('Supabase belum dikonfigurasi');
     return;
   }
 
@@ -520,21 +473,18 @@ async function saveDokumenNow(isAutosave = false) {
     if (result) {
       editorDokumenId = result.id;
       editorLastSavedContent = content;
+      editorHasUnsavedChanges = false;
       updateEditorSaveStatus('saved');
       updateEditorVersionDisplay(result.versi || 1);
 
-      if (!isAutosave) {
-        toastSuccess('Dokumen berhasil disimpan!');
-      }
+      if (!isAutosave) toastSuccess('Dokumen berhasil disimpan!');
     } else {
       throw new Error('Response kosong dari server');
     }
   } catch (error) {
     console.error('[Editor] Save error:', error);
     updateEditorSaveStatus('error', error.message || 'Gagal menyimpan');
-    if (!isAutosave) {
-      toastError('Gagal menyimpan: ' + (error.message || ''));
-    }
+    if (!isAutosave) toastError('Gagal menyimpan: ' + (error.message || ''));
   } finally {
     editorIsSaving = false;
   }
@@ -554,7 +504,7 @@ function updateEditorSaveStatus(status, message) {
     case 'saved':
       statusEl.classList.add('saved');
       const time = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-      statusEl.innerHTML = `<i class="fas fa-check-circle"></i> Tersimpan (${time})`;
+      statusEl.innerHTML = '<i class="fas fa-check-circle"></i> Tersimpan (' + time + ')';
       break;
     case 'unsaved':
       statusEl.classList.add('saving');
@@ -562,43 +512,37 @@ function updateEditorSaveStatus(status, message) {
       break;
     case 'error':
       statusEl.classList.add('error');
-      statusEl.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Gagal menyimpan${message ? ': ' + message : ''}`;
+      statusEl.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Gagal menyimpan' + (message ? ': ' + message : '');
       break;
   }
 
-  // Update footer time
   const timeEl = document.getElementById('editorTime');
   if (timeEl) {
-    timeEl.textContent = new Date().toLocaleString('id-ID', {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    timeEl.textContent = new Date().toLocaleString('id-ID', { hour: '2-digit', minute: '2-digit' });
   }
 }
 
 function updateEditorVersionDisplay(version) {
   const el = document.getElementById('editorDocVersion');
-  if (el) el.textContent = `Versi ${version}`;
+  if (el) el.textContent = 'Versi ' + version;
 }
 
 function updateEditorPageCount() {
   if (!editorInstance) return;
   const content = editorInstance.getContent();
-  // Estimasi halaman: setiap ~3000 karakter = 1 halaman A4
-  const charCount = content.replace(/<[^>]+>/g, '').length;
-  const estimatedPages = Math.max(1, Math.ceil(charCount / 3000));
+  const text = content.replace(/<[^>]+>/g, '');
+  const wordCount = text.split(/\s+/).filter(Boolean).length;
+  const charCount = text.length;
   const el = document.getElementById('editorPageCount');
-  if (el) el.textContent = `~${estimatedPages} halaman`;
+  if (el) el.textContent = wordCount + ' kata, ' + charCount + ' karakter';
 }
 
 /* ============================================
- * PENGATURAN HALAMAN PANEL
- * ============================================
- */
+ * PENGATURAN HALAMAN
+ * ============================================ */
 function renderEditorSettings() {
   const body = document.getElementById('editorSettingsBody');
   if (!body) return;
-
   const p = editorPengaturanHalaman;
 
   body.innerHTML = `
@@ -606,15 +550,15 @@ function renderEditorSettings() {
       <h4><i class="fas fa-file"></i> Ukuran & Orientasi</h4>
       <div class="form-group">
         <label>Ukuran Kertas</label>
-        <select id="pageSize" onchange="updatePengaturanHalaman()">
+        <select id="pageSize">
           <option value="A4" ${p.size === 'A4' ? 'selected' : ''}>A4 (210 x 297 mm)</option>
-          <option value="Letter" ${p.size === 'Letter' ? 'selected' : ''}>Letter (216 x 279 mm)</option>
-          <option value="Legal" ${p.size === 'Legal' ? 'selected' : ''}>Legal (216 x 356 mm)</option>
+          <option value="Letter" ${p.size === 'Letter' ? 'selected' : ''}>Letter</option>
+          <option value="Legal" ${p.size === 'Legal' ? 'selected' : ''}>Legal</option>
         </select>
       </div>
       <div class="form-group">
         <label>Orientasi</label>
-        <select id="pageOrientation" onchange="updatePengaturanHalaman()">
+        <select id="pageOrientation">
           <option value="portrait" ${p.orientation === 'portrait' ? 'selected' : ''}>Portrait</option>
           <option value="landscape" ${p.orientation === 'landscape' ? 'selected' : ''}>Landscape</option>
         </select>
@@ -624,24 +568,12 @@ function renderEditorSettings() {
     <div class="editor-settings-section">
       <h4><i class="fas fa-arrows-alt"></i> Margin (mm)</h4>
       <div class="form-row">
-        <div class="form-group">
-          <label>Atas</label>
-          <input type="number" id="marginTop" value="${p.marginTop}" min="0" max="50" onchange="updatePengaturanHalaman()">
-        </div>
-        <div class="form-group">
-          <label>Bawah</label>
-          <input type="number" id="marginBottom" value="${p.marginBottom}" min="0" max="50" onchange="updatePengaturanHalaman()">
-        </div>
+        <div class="form-group"><label>Atas</label><input type="number" id="marginTop" value="${p.marginTop}" min="0" max="50"></div>
+        <div class="form-group"><label>Bawah</label><input type="number" id="marginBottom" value="${p.marginBottom}" min="0" max="50"></div>
       </div>
       <div class="form-row">
-        <div class="form-group">
-          <label>Kiri</label>
-          <input type="number" id="marginLeft" value="${p.marginLeft}" min="0" max="50" onchange="updatePengaturanHalaman()">
-        </div>
-        <div class="form-group">
-          <label>Kanan</label>
-          <input type="number" id="marginRight" value="${p.marginRight}" min="0" max="50" onchange="updatePengaturanHalaman()">
-        </div>
+        <div class="form-group"><label>Kiri</label><input type="number" id="marginLeft" value="${p.marginLeft}" min="0" max="50"></div>
+        <div class="form-group"><label>Kanan</label><input type="number" id="marginRight" value="${p.marginRight}" min="0" max="50"></div>
       </div>
     </div>
 
@@ -649,27 +581,27 @@ function renderEditorSettings() {
       <h4><i class="fas fa-paragraph"></i> Spasi & Paragraf</h4>
       <div class="form-group">
         <label>Line Height</label>
-        <select id="lineHeight" onchange="updatePengaturanHalaman()">
-          <option value="1" ${p.lineHeight == 1 ? 'selected' : ''}>1.0 (Single)</option>
+        <select id="lineHeight">
+          <option value="1" ${p.lineHeight == 1 ? 'selected' : ''}>1.0</option>
           <option value="1.15" ${p.lineHeight == 1.15 ? 'selected' : ''}>1.15</option>
           <option value="1.5" ${p.lineHeight == 1.5 ? 'selected' : ''}>1.5</option>
-          <option value="2" ${p.lineHeight == 2 ? 'selected' : ''}>2.0 (Double)</option>
+          <option value="2" ${p.lineHeight == 2 ? 'selected' : ''}>2.0</option>
         </select>
       </div>
       <div class="form-group">
         <label>Spasi Antar Paragraf (pt)</label>
-        <input type="number" id="paragraphSpacing" value="${p.paragraphSpacing}" min="0" max="36" onchange="updatePengaturanHalaman()">
+        <input type="number" id="paragraphSpacing" value="${p.paragraphSpacing}" min="0" max="36">
       </div>
     </div>
 
     <div class="editor-settings-section">
       <h4><i class="fas fa-heading"></i> Header & Footer</h4>
       <div class="form-group">
-        <label>Header Dokumen (HTML)</label>
+        <label>Header (HTML)</label>
         <textarea id="editorHeaderInput" rows="3" placeholder="Kop surat / header...">${escapeHtml(p.headerDokumen || '')}</textarea>
       </div>
       <div class="form-group">
-        <label>Footer Dokumen (HTML)</label>
+        <label>Footer (HTML)</label>
         <textarea id="editorFooterInput" rows="3" placeholder="Footer...">${escapeHtml(p.footerDokumen || '')}</textarea>
       </div>
       <button class="btn btn-primary btn-sm" style="width: 100%; margin-top: 8px;" onclick="applyPengaturanHalaman()">
@@ -690,15 +622,14 @@ function closeEditorSettings() {
 }
 
 function updatePengaturanHalaman() {
-  // Hanya update state, apply dilakukan saat klik "Terapkan"
   editorPengaturanHalaman = {
     size: document.getElementById('pageSize')?.value || 'A4',
     orientation: document.getElementById('pageOrientation')?.value || 'portrait',
-    marginTop: parseInt(document.getElementById('marginTop')?.value || 15),
-    marginBottom: parseInt(document.getElementById('marginBottom')?.value || 15),
-    marginLeft: parseInt(document.getElementById('marginLeft')?.value || 18),
-    marginRight: parseInt(document.getElementById('marginRight')?.value || 18),
-    lineHeight: parseFloat(document.getElementById('lineHeight')?.value || 1.5),
+    marginTop: parseInt(document.getElementById('marginTop')?.value || 25),
+    marginBottom: parseInt(document.getElementById('marginBottom')?.value || 25),
+    marginLeft: parseInt(document.getElementById('marginLeft')?.value || 30),
+    marginRight: parseInt(document.getElementById('marginRight')?.value || 25),
+    lineHeight: parseFloat(document.getElementById('lineHeight')?.value || 1.15),
     paragraphSpacing: parseInt(document.getElementById('paragraphSpacing')?.value || 8),
   };
 }
@@ -710,100 +641,53 @@ function applyPengaturanHalaman() {
   const pageContainer = document.getElementById('editorPageContainer');
   if (pageContainer) {
     pageContainer.className = 'editor-page-container';
-    if (editorPengaturanHalaman.size === 'A4') {
-      pageContainer.classList.add(editorPengaturanHalaman.orientation === 'landscape' ? 'a4-landscape' : 'a4-portrait');
-    }
-    pageContainer.classList.add('has-margins');
+    pageContainer.classList.add(editorPengaturanHalaman.orientation === 'landscape' ? 'a4-landscape' : 'a4-portrait');
   }
 
-  // Update content style di TinyMCE (cara yang benar)
-  // Guard: cek editorInstance sudah siap
-  if (!editorInstance || !editorInstance.getBody) {
-    console.warn('[Editor] Editor belum siap, pengaturan disimpan tapi belum diterapkan');
-    toastSuccess('Pengaturan disimpan! Akan diterapkan saat editor siap.');
-    closeEditorSettings();
-    return;
-  }
+  // Update TinyMCE body style langsung
+  if (editorInstance && editorInstance.getBody) {
+    try {
+      const p = editorPengaturanHalaman;
+      const body = editorInstance.getBody();
+      if (body) {
+        body.style.padding = p.marginTop + 'mm ' + p.marginRight + 'mm ' + p.marginBottom + 'mm ' + p.marginLeft + 'mm';
+        body.style.lineHeight = String(p.lineHeight);
+        body.style.boxSizing = 'border-box';
+      }
 
-  try {
-    const p = editorPengaturanHalaman;
-    const body = editorInstance.getBody();
-
-    if (body) {
-      // Update inline style body langsung
-      body.style.fontFamily = "'Times New Roman', Times, serif";
-      body.style.fontSize = '12pt';
-      body.style.lineHeight = String(p.lineHeight);
-      body.style.margin = '0';
-      body.style.padding = `${p.marginTop}mm ${p.marginRight}mm ${p.marginBottom}mm ${p.marginLeft}mm`;
-      body.style.boxSizing = 'border-box';
-      body.style.color = '#000';
-      body.style.background = '#fff';
-    }
-
-    // Update paragraf style
-    const paragraphs = editorInstance.dom.select('p');
-    if (paragraphs && paragraphs.length > 0) {
-      paragraphs.forEach((pEl) => {
-        editorInstance.dom.setStyle(pEl, 'margin-bottom', p.paragraphSpacing + 'pt');
-        editorInstance.dom.setStyle(pEl, 'line-height', String(p.lineHeight));
+      // Update paragraf
+      const paras = editorInstance.dom.select('p');
+      paras.forEach((el) => {
+        editorInstance.dom.setStyle(el, 'margin-bottom', p.paragraphSpacing + 'pt');
+        editorInstance.dom.setStyle(el, 'line-height', String(p.lineHeight));
       });
-    }
 
-    // Update tabel style
-    const tables = editorInstance.dom.select('table');
-    if (tables && tables.length > 0) {
-      tables.forEach((tbl) => {
-        editorInstance.dom.setStyle(tbl, 'border-collapse', 'collapse');
-        editorInstance.dom.setStyle(tbl, 'width', '100%');
-        editorInstance.dom.setStyle(tbl, 'margin', '6pt 0');
-      });
+      console.log('[Editor] Pengaturan diterapkan:', p);
+    } catch (err) {
+      console.error('[Editor] Gagal apply:', err);
     }
-
-    const cells = editorInstance.dom.select('td, th');
-    if (cells && cells.length > 0) {
-      cells.forEach((cell) => {
-        editorInstance.dom.setStyle(cell, 'border', '1px solid #000');
-        editorInstance.dom.setStyle(cell, 'padding', '4px 6px');
-        editorInstance.dom.setStyle(cell, 'vertical-align', 'top');
-        editorInstance.dom.setStyle(cell, 'line-height', '1.3');
-      });
-    }
-
-    console.log('[Editor] Pengaturan halaman diterapkan:', p);
-  } catch (err) {
-    console.error('[Editor] Gagal apply pengaturan:', err);
-    toastWarning('Pengaturan disimpan, tapi gagal diterapkan ke editor: ' + err.message);
   }
 
   toastSuccess('Pengaturan halaman diterapkan!');
   closeEditorSettings();
-
-  // Trigger autosave (karena pengaturan berubah)
+  editorHasUnsavedChanges = true;
   updateEditorSaveStatus('unsaved');
   scheduleAutoSave();
 }
 
 /* ============================================
  * VERSION HISTORY
- * ============================================
- */
+ * ============================================ */
 async function openVersionHistory() {
   const panel = document.getElementById('versionHistoryPanel');
   if (!panel) return;
-
   panel.classList.add('active');
 
   const listEl = document.getElementById('versionHistoryList');
   if (!listEl) return;
 
   if (!editorDokumenId) {
-    listEl.innerHTML = `
-      <p style="text-align: center; color: var(--text-light); padding: 20px;">
-        <i class="fas fa-info-circle" style="font-size: 32px; margin-bottom: 8px; display: block;"></i>
-        Dokumen belum disimpan. Riwayat versi akan tersedia setelah dokumen disimpan.
-      </p>
-    `;
+    listEl.innerHTML = '<p style="text-align: center; color: var(--text-light); padding: 20px;"><i class="fas fa-info-circle" style="font-size: 32px; margin-bottom: 8px; display: block;"></i>Dokumen belum disimpan. Riwayat tersedia setelah disimpan.</p>';
     return;
   }
 
@@ -811,14 +695,8 @@ async function openVersionHistory() {
 
   try {
     const versions = await fetchDokumenVersions(editorDokumenId);
-
     if (versions.length === 0) {
-      listEl.innerHTML = `
-        <p style="text-align: center; color: var(--text-light); padding: 20px;">
-          <i class="fas fa-history" style="font-size: 32px; margin-bottom: 8px; display: block;"></i>
-          Belum ada riwayat versi tersimpan.
-        </p>
-      `;
+      listEl.innerHTML = '<p style="text-align: center; color: var(--text-light); padding: 20px;"><i class="fas fa-history" style="font-size: 32px; margin-bottom: 8px; display: block;"></i>Belum ada riwayat versi.</p>';
       return;
     }
 
@@ -833,18 +711,13 @@ async function openVersionHistory() {
           <i class="fas fa-info-circle"></i> ${escapeHtml(v.catatan_perubahan || '-')}
         </div>
         <div class="editor-version-actions">
-          <button class="btn-restore" onclick="restoreVersion('${escapeHtml(String(v.id))}')">
-            <i class="fas fa-undo"></i> Restore
-          </button>
-          <button onclick="previewVersion('${escapeHtml(String(v.id))}')">
-            <i class="fas fa-eye"></i> Preview
-          </button>
+          <button class="btn-restore" onclick="restoreVersion('${escapeHtml(String(v.id))}')"><i class="fas fa-undo"></i> Pulihkan</button>
+          <button onclick="previewVersion('${escapeHtml(String(v.id))}')"><i class="fas fa-eye"></i> Preview</button>
         </div>
       </div>
     `).join('');
   } catch (err) {
-    console.error('[Editor] Version history error:', err);
-    listEl.innerHTML = `<p style="color: var(--danger); padding: 20px;">Gagal memuat riwayat: ${escapeHtml(err.message || '')}</p>`;
+    listEl.innerHTML = '<p style="color: var(--danger); padding: 20px;">Gagal memuat: ' + escapeHtml(err.message || '') + '</p>';
   }
 }
 
@@ -856,33 +729,28 @@ function closeVersionHistory() {
 async function restoreVersion(versionId) {
   if (!editorDokumenId || !versionId) return;
 
-  const confirmed = await confirmDialog(
-    'Restore ke versi ini?\n\nPerubahan saat ini akan disimpan sebagai versi baru, dan dokumen akan kembali ke versi yang dipilih.'
-  );
+  const confirmed = await confirmDialog('Pulihkan versi ini?\n\nPerubahan saat ini akan disimpan sebagai versi baru, lalu dokumen kembali ke versi yang dipilih.');
   if (!confirmed) return;
 
   try {
-    toastInfo('Merestore versi...');
+    toastInfo('Memulihkan versi...');
     const result = await restoreDokumenVersion(editorDokumenId, versionId);
 
-    // Update editor dengan konten yang sudah di-restore
     if (editorInstance && result?.konten) {
       editorInstance.setContent(result.konten);
       editorLastSavedContent = result.konten;
+      editorHasUnsavedChanges = false;
     }
-
     updateEditorVersionDisplay(result.versi || 1);
-    toastSuccess('Dokumen berhasil di-restore ke versi terpilih!');
-    openVersionHistory(); // refresh list
+    toastSuccess('Dokumen dipulihkan ke versi terpilih!');
+    openVersionHistory();
   } catch (err) {
-    console.error('[Editor] Restore error:', err);
-    toastError('Gagal restore: ' + (err.message || ''));
+    toastError('Gagal pulihkan: ' + (err.message || ''));
   }
 }
 
 async function previewVersion(versionId) {
   if (!editorDokumenId) return;
-
   try {
     const versions = await fetchDokumenVersions(editorDokumenId);
     const version = versions.find((v) => v.id === versionId);
@@ -891,7 +759,6 @@ async function previewVersion(versionId) {
       return;
     }
 
-    // Tampilkan di modal preview
     let modal = document.getElementById('versionPreviewModal');
     if (modal) modal.remove();
 
@@ -903,12 +770,8 @@ async function previewVersion(versionId) {
     modal.innerHTML = `
       <div class="modal" style="max-width: 900px; max-height: 90vh; overflow-y: auto;">
         <div class="modal-header">
-          <h3 class="modal-title">
-            <i class="fas fa-eye"></i> Preview Versi ${version.versi}
-          </h3>
-          <button class="modal-close" onclick="document.getElementById('versionPreviewModal').remove()">
-            <i class="fas fa-times"></i>
-          </button>
+          <h3 class="modal-title"><i class="fas fa-eye"></i> Preview Versi ${version.versi}</h3>
+          <button class="modal-close" onclick="document.getElementById('versionPreviewModal').remove()"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
           <div style="background: #f8fafc; padding: 12px; border-radius: 8px; margin-bottom: 16px; font-size: 0.85rem;">
@@ -922,26 +785,21 @@ async function previewVersion(versionId) {
           </div>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-primary" onclick="document.getElementById('versionPreviewModal').remove()">
-            <i class="fas fa-times"></i> Tutup
-          </button>
+          <button class="btn btn-primary" onclick="document.getElementById('versionPreviewModal').remove()"><i class="fas fa-times"></i> Tutup</button>
         </div>
       </div>
     `;
 
     document.body.appendChild(modal);
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal) modal.remove();
-    });
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
   } catch (err) {
     toastError('Gagal memuat preview: ' + (err.message || ''));
   }
 }
 
 /* ============================================
- * UPLOAD IMAGE ke Supabase Storage
- * ============================================
- */
+ * IMAGE UPLOAD ke Supabase Storage
+ * ============================================ */
 async function uploadImageToStorage(blobInfo, progress) {
   if (!isSupabaseReady()) {
     throw new Error('Supabase belum dikonfigurasi');
@@ -949,16 +807,12 @@ async function uploadImageToStorage(blobInfo, progress) {
 
   const file = blobInfo.blob();
   const ext = (file.name || 'image').split('.').pop().toLowerCase();
-  const fileName = `editor-images/${Date.now()}_${Math.random().toString(36).substr(2, 8)}.${ext}`;
+  const fileName = 'editor-images/' + Date.now() + '_' + Math.random().toString(36).substr(2, 8) + '.' + ext;
 
   try {
     const { error: uploadError } = await supabaseClient.storage
       .from(STORAGE_BUCKET)
-      .upload(fileName, file, {
-        cacheControl: '3600',
-        upsert: false,
-        contentType: file.type,
-      });
+      .upload(fileName, file, { cacheControl: '3600', upsert: false, contentType: file.type });
 
     if (uploadError) throw uploadError;
 
@@ -971,13 +825,8 @@ async function uploadImageToStorage(blobInfo, progress) {
 }
 
 /* ============================================
- * EXPORT - PDF & DOCX
- * ============================================
- */
-
-/**
- * Export ke PDF - gunakan browser print
- */
+ * EXPORT PDF - browser print dengan CSS
+ * ============================================ */
 function exportDokumenPDF() {
   if (!editorInstance) {
     toastWarning('Editor belum siap');
@@ -985,26 +834,22 @@ function exportDokumenPDF() {
   }
 
   const content = editorInstance.getContent();
+  const p = editorPengaturanHalaman;
+  const pageWidth = p.orientation === 'landscape' ? '297mm' : '210mm';
+  const pageHeight = p.orientation === 'landscape' ? '210mm' : '297mm';
 
-  // Buat wrapper print khusus
   const printWrapper = document.createElement('div');
   printWrapper.id = 'pakPrintWrapper';
   printWrapper.className = 'pak-print-wrapper';
 
-  const orientation = editorPengaturanHalaman.orientation;
-  const pageClass = orientation === 'landscape' ? 'a4-landscape' : 'a4-portrait';
-  const pageWidth = orientation === 'landscape' ? '297mm' : '210mm';
-  const pageHeight = orientation === 'landscape' ? '210mm' : '297mm';
-
   printWrapper.innerHTML = `
     <div class="pak-print-pages" style="background: #fff; padding: 0;">
-      <div class="pak-page" data-orientation="${orientation}" style="width: ${pageWidth}; height: ${pageHeight}; padding: ${editorPengaturanHalaman.marginTop}mm ${editorPengaturanHalaman.marginRight}mm ${editorPengaturanHalaman.marginBottom}mm ${editorPengaturanHalaman.marginLeft}mm; font-family: 'Times New Roman', serif; font-size: 12pt; line-height: ${editorPengaturanHalaman.lineHeight};">
+      <div class="pak-page" data-orientation="${p.orientation}" style="width: ${pageWidth}; height: ${pageHeight}; padding: ${p.marginTop}mm ${p.marginRight}mm ${p.marginBottom}mm ${p.marginLeft}mm; font-family: 'Times New Roman', serif; font-size: 12pt; line-height: ${p.lineHeight}; box-sizing: border-box;">
         ${content}
       </div>
     </div>
   `;
 
-  // Hapus wrapper lama
   const oldWrapper = document.getElementById('pakPrintWrapper');
   if (oldWrapper) oldWrapper.remove();
 
@@ -1021,10 +866,9 @@ function exportDokumenPDF() {
   }, 300);
 }
 
-/**
- * Export ke DOCX - konversi HTML ke DOCX
- * Pakai approach: download sebagai Word-compatible HTML (.doc)
- */
+/* ============================================
+ * EXPORT DOCX - pakai html-docx-js library
+ * ============================================ */
 function exportDokumenDOCX() {
   if (!editorInstance) {
     toastWarning('Editor belum siap');
@@ -1034,11 +878,13 @@ function exportDokumenDOCX() {
   toastInfo('Mengekspor ke DOCX...');
 
   const content = editorInstance.getContent();
+  const p = editorPengaturanHalaman;
   const header = document.getElementById('editorHeaderInput')?.value || '';
   const footer = document.getElementById('editorFooterInput')?.value || '';
 
   // Word-compatible HTML
   const html = `
+    <!DOCTYPE html>
     <html xmlns:o="urn:schemas-microsoft-com:office:office"
           xmlns:w="urn:schemas-microsoft-com:office:word"
           xmlns="http://www.w3.org/TR/REC-html40">
@@ -1056,8 +902,8 @@ function exportDokumenDOCX() {
       <![endif]-->
       <style>
         @page {
-          size: ${editorPengaturanHalaman.size} ${editorPengaturanHalaman.orientation};
-          margin: ${editorPengaturanHalaman.marginTop}mm ${editorPengaturanHalaman.marginRight}mm ${editorPengaturanHalaman.marginBottom}mm ${editorPengaturanHalaman.marginLeft}mm;
+          size: ${p.size} ${p.orientation};
+          margin: ${p.marginTop}mm ${p.marginRight}mm ${p.marginBottom}mm ${p.marginLeft}mm;
           mso-header: h;
           mso-footer: f;
         }
@@ -1066,12 +912,18 @@ function exportDokumenDOCX() {
         body {
           font-family: 'Times New Roman', serif;
           font-size: 12pt;
-          line-height: ${editorPengaturanHalaman.lineHeight};
+          line-height: ${p.lineHeight};
+          color: #000;
         }
-        p { margin: 0 0 ${editorPengaturanHalaman.paragraphSpacing}pt 0; }
-        table { border-collapse: collapse; width: 100%; }
-        td, th { border: 1px solid #000; padding: 4px 6px; }
-        h1, h2, h3 { margin: 8pt 0 4pt 0; }
+        p { margin: 0 0 ${p.paragraphSpacing}pt 0; line-height: ${p.lineHeight}; }
+        h1 { font-size: 18pt; margin: 12pt 0 6pt 0; }
+        h2 { font-size: 14pt; margin: 12pt 0 6pt 0; }
+        h3 { font-size: 12pt; margin: 10pt 0 5pt 0; }
+        table { border-collapse: collapse; width: 100%; margin: 6pt 0; }
+        td, th { border: 1px solid #000; padding: 4px 6px; vertical-align: top; }
+        ul, ol { margin: 6pt 0; padding-left: 24pt; }
+        img { max-width: 100%; height: auto; }
+        a { color: #1a73e8; text-decoration: underline; }
       </style>
     </head>
     <body>
@@ -1082,60 +934,131 @@ function exportDokumenDOCX() {
     </html>
   `;
 
-  // Convert to blob & download
-  const blob = new Blob(['\ufeff' + html], { type: 'application/msword' });
+  try {
+    // Cek apakah html-docx-js tersedia
+    if (typeof window.htmlDocx === 'undefined') {
+      // Fallback: download sebagai .doc (Word-compatible HTML)
+      console.warn('[Editor] html-docx-js tidak tersedia, fallback ke .doc');
+      const blob = new Blob(['\ufeff' + html], { type: 'application/msword' });
+      downloadBlob(blob, '.doc');
+      toastSuccess('Dokumen diekspor ke DOC (Word-compatible)!');
+      return;
+    }
+
+    // Pakai html-docx-js untuk konversi ke .docx yang real
+    const docxBlob = window.htmlDocx.asBlob(html, {
+      orientation: p.orientation,
+      margins: {
+        top: p.marginTop,
+        right: p.marginRight,
+        bottom: p.marginBottom,
+        left: p.marginLeft,
+      },
+    });
+
+    downloadBlob(docxBlob, '.docx');
+    toastSuccess('Dokumen berhasil diekspor ke DOCX!');
+  } catch (err) {
+    console.error('[Editor] DOCX export error:', err);
+    // Fallback ke .doc
+    const blob = new Blob(['\ufeff' + html], { type: 'application/msword' });
+    downloadBlob(blob, '.doc');
+    toastSuccess('Dokumen diekspor ke DOC (fallback)!');
+  }
+}
+
+function downloadBlob(blob, ext) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `PAK_Integrasi_${editorCurrentData?.['NIP'] || 'dokumen'}_${new Date().toISOString().split('T')[0]}.doc`;
+  a.download = 'PAK_Integrasi_' + (editorCurrentData?.['NIP'] || 'dokumen') + '_' + new Date().toISOString().split('T')[0] + ext;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-
-  toastSuccess('Dokumen berhasil diekspor ke DOCX!');
 }
 
 /* ============================================
- * CLOSE EDITOR
- * ============================================
- */
+ * CLOSE - dengan prompt unsaved changes
+ * ============================================ */
 async function closeDocumentEditor() {
-  // Cek apakah ada perubahan yang belum disimpan
-  if (editorInstance) {
-    const currentContent = editorInstance.getContent();
-    if (currentContent !== editorLastSavedContent) {
-      const confirmed = await confirmDialog(
-        'Ada perubahan yang belum disimpan.\n\nSimpan sebelum tutup?'
-      );
-      if (confirmed) {
-        await saveDokumenNow(false);
-      }
+  // Cek apakah ada perubahan belum disimpan
+  if (editorInstance && editorHasUnsavedChanges) {
+    // Buat modal custom (bukan confirm browser)
+    const choice = await showCloseConfirmDialog();
+    if (choice === 'cancel') return;
+    if (choice === 'save') {
+      await saveDokumenNow(false);
     }
+    // choice === 'discard' → lanjut tutup
+  }
 
-    // Destroy TinyMCE instance
-    editorInstance.remove();
+  // Destroy TinyMCE
+  if (editorInstance) {
+    try {
+      editorInstance.remove();
+    } catch (e) {
+      console.warn('[Editor] Gagal destroy:', e.message);
+    }
     editorInstance = null;
   }
 
-  // Clear autosave timer
   if (editorAutoSaveTimer) {
     clearTimeout(editorAutoSaveTimer);
     editorAutoSaveTimer = null;
   }
 
-  // Hapus modal
   const modal = document.getElementById('editorModal');
   if (modal) modal.remove();
-
   document.body.style.overflow = '';
+
   editorCurrentData = null;
   editorDokumenId = null;
   editorLastSavedContent = '';
+  editorHasUnsavedChanges = false;
+}
 
-  // Refresh preview PAK di halaman utama (jika ada)
-  if (typeof generatePAKIntegrasi === 'function' && currentPAKData) {
-    // Hanya refresh jika user ingin lihat perubahan
-    console.log('[Editor] Editor ditutup. Refresh preview untuk melihat perubahan.');
-  }
+function showCloseConfirmDialog() {
+  return new Promise((resolve) => {
+    let modal = document.getElementById('closeConfirmModal');
+    if (modal) modal.remove();
+
+    modal = document.createElement('div');
+    modal.id = 'closeConfirmModal';
+    modal.className = 'modal-overlay active';
+    modal.style.cssText = 'display: flex;';
+
+    modal.innerHTML = `
+      <div class="modal" style="max-width: 450px;">
+        <div class="modal-body">
+          <div class="confirm-dialog">
+            <div class="confirm-icon danger"><i class="fas fa-exclamation-triangle"></i></div>
+            <h3 style="margin-bottom: 12px;">Perubahan belum disimpan</h3>
+            <p class="confirm-text">Apakah Anda yakin ingin keluar?</p>
+            <p class="confirm-subtext">Perubahan yang belum disimpan akan hilang jika Anda memilih "Tutup Tanpa Menyimpan".</p>
+          </div>
+        </div>
+        <div class="modal-footer" style="justify-content: center; flex-wrap: wrap; gap: 8px;">
+          <button class="btn btn-warning" id="closeBtnCancel"><i class="fas fa-times"></i> Batal</button>
+          <button class="btn btn-success" id="closeBtnSave"><i class="fas fa-save"></i> Simpan & Tutup</button>
+          <button class="btn btn-danger" id="closeBtnDiscard"><i class="fas fa-door-open"></i> Tutup Tanpa Menyimpan</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    const cleanup = (choice) => {
+      modal.remove();
+      resolve(choice);
+    };
+
+    document.getElementById('closeBtnCancel').onclick = () => cleanup('cancel');
+    document.getElementById('closeBtnSave').onclick = () => cleanup('save');
+    document.getElementById('closeBtnDiscard').onclick = () => cleanup('discard');
+
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) cleanup('cancel');
+    });
+  });
 }
