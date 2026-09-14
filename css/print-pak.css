@@ -1,31 +1,51 @@
 /* ============================================
-   PAKTI - Print Stylesheet (PAK Integrasi)
+   PAKTI - Print Stylesheet (4 Dokumen PAK Integrasi)
+   ============================================
+   Setiap .pak-page = 1 halaman A4
+   Page-break otomatis antar dokumen
    ============================================ */
 
-/* Default tampilan di layar */
-.pak-document {
+/* Layout preview di layar */
+.pak-print-pages {
+  background: var(--white);
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+}
+
+.pak-page {
   background: #fff;
   padding: 30px;
-  border-radius: 8px;
   font-family: 'Times New Roman', Times, serif;
   font-size: 12pt;
   color: #000;
   line-height: 1.5;
+  margin-bottom: 20px;
+  border-bottom: 1px dashed var(--border-color);
+  page-break-after: always;
+  break-after: page;
 }
 
-.pak-document .kop-table {
+.pak-page:last-child {
+  page-break-after: auto;
+  break-after: auto;
+  margin-bottom: 0;
+}
+
+/* Kop Surat */
+.pak-page .kop-table {
   width: 100%;
   border-collapse: collapse;
   margin-bottom: 4px;
 }
 
-.pak-document .kop-logo {
+.pak-page .kop-logo {
   width: 80px;
   vertical-align: middle;
   padding-right: 12px;
 }
 
-.pak-document .kop-emblem {
+.pak-page .kop-emblem {
   width: 70px;
   height: 80px;
   border: 2px solid #000;
@@ -36,62 +56,62 @@
   border-radius: 4px;
 }
 
-.pak-document .kop-text {
+.pak-page .kop-text {
   text-align: center;
   vertical-align: middle;
 }
 
-.pak-document .kop-line1 {
+.pak-page .kop-line1 {
   font-size: 14pt;
   font-weight: bold;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
-.pak-document .kop-line2 {
+.pak-page .kop-line2 {
   font-size: 16pt;
   font-weight: bold;
   text-transform: uppercase;
   margin-top: 2px;
 }
 
-.pak-document .kop-line3 {
+.pak-page .kop-line3 {
   font-size: 10pt;
   margin-top: 2px;
 }
 
-.pak-document .kop-line {
+.pak-page .kop-line {
   border-bottom: 3px solid #000;
   margin: 8px 0 20px 0;
   height: 1px;
   overflow: hidden;
 }
 
-.pak-document .doc-title {
+.pak-page .doc-title {
   text-align: center;
   margin: 20px 0;
 }
 
-.pak-document .doc-title h2 {
+.pak-page .doc-title h2 {
   font-size: 14pt;
   font-weight: bold;
   text-transform: uppercase;
   margin-bottom: 4px;
 }
 
-.pak-document .doc-title p {
+.pak-page .doc-title p {
   font-size: 11pt;
   font-style: italic;
 }
 
 /* Tabel PAK */
-.pak-document .pak-table {
+.pak-page .pak-table {
   width: 100%;
   border-collapse: collapse;
   margin-bottom: 16px;
 }
 
-.pak-document .pak-table .section-header {
+.pak-page .pak-table .section-header {
   background: #e0e0e0;
   font-weight: bold;
   text-align: left;
@@ -100,49 +120,58 @@
   font-size: 11pt;
 }
 
-.pak-document .pak-table td,
-.pak-document .pak-table th {
+.pak-page .pak-table .section-sub-header {
+  background: #f0f0f0;
+  font-weight: bold;
+  text-align: center;
+  padding: 6px 10px;
+  border: 1px solid #000;
+  font-size: 10pt;
+}
+
+.pak-page .pak-table td,
+.pak-page .pak-table th {
   border: 1px solid #000;
   padding: 5px 8px;
   vertical-align: top;
 }
 
-.pak-document .pak-table .ak-header-row th {
+.pak-page .pak-table .ak-header-row th {
   background: #f5f5f5;
   text-align: center;
   font-weight: bold;
   font-size: 10pt;
 }
 
-.pak-document .pak-table .col-no {
+.pak-page .pak-table .col-no {
   width: 40px;
   text-align: center;
 }
 
-.pak-document .pak-table .col-label {
-  width: 45%;
+.pak-page .pak-table .col-label {
+  width: 35%;
 }
 
-.pak-document .pak-table .col-value {
+.pak-page .pak-table .col-value {
   /* auto */
 }
 
-.pak-document .pak-table .col-ak {
+.pak-page .pak-table .col-ak {
   text-align: center;
   width: 90px;
 }
 
-.pak-document .pak-table .ak-total-row td {
+.pak-page .pak-table .ak-total-row td {
   background: #f0f0f0;
   text-align: center;
 }
 
-.pak-document .pak-table .ak-total-row td:first-child {
+.pak-page .pak-table .ak-total-row td:first-child {
   text-align: left;
 }
 
 /* Rekomendasi */
-.pak-document .rekomendasi-box {
+.pak-page .rekomendasi-box {
   border: 1px solid #000;
   padding: 10px;
   margin: 16px 0;
@@ -151,23 +180,23 @@
 }
 
 /* Tanda tangan */
-.pak-document .ttd-table {
+.pak-page .ttd-table {
   width: 100%;
   margin-top: 30px;
 }
 
-.pak-document .ttd-cell {
+.pak-page .ttd-cell {
   text-align: left;
-  padding-left: 60%;
+  padding-left: 55%;
   vertical-align: top;
 }
 
-.pak-document .ttd-space {
+.pak-page .ttd-space {
   height: 80px;
 }
 
 /* Footer */
-.pak-document .doc-footer {
+.pak-page .doc-footer {
   margin-top: 30px;
   padding-top: 10px;
   border-top: 1px dashed #999;
@@ -178,11 +207,10 @@
 }
 
 /* ============================================
-   PRINT MODE - yang muncul saat window.print()
+   PRINT MODE - 4 dokumen dalam 1 PDF
    ============================================ */
 
 @media print {
-  /* Sembunyikan semua elemen kecuali PAK document */
   body.printing-pak > *:not(.pak-print-wrapper) {
     display: none !important;
   }
@@ -193,16 +221,21 @@
     padding: 0;
   }
 
-  body.printing-pak .pak-document {
-    padding: 0;
-    margin: 0;
-    box-shadow: none;
-    border-radius: 0;
+  body.printing-pak .pak-print-wrapper {
+    display: block;
   }
 
-  body.printing-pak .pak-document .kop-emblem {
-    /* Logo dicetak border tipis */
-    border-color: #000;
+  body.printing-pak .pak-page {
+    padding: 0;
+    margin: 0;
+    border: none;
+    page-break-after: always;
+    break-after: page;
+  }
+
+  body.printing-pak .pak-page:last-child {
+    page-break-after: auto;
+    break-after: auto;
   }
 
   /* Pastikan warna background tercetak */
@@ -213,7 +246,7 @@
   }
 
   @page {
-    size: A4;
+    size: A4 portrait;
     margin: 1.5cm;
   }
 }
@@ -262,6 +295,42 @@
   gap: 8px;
   margin: 16px 0;
   flex-wrap: wrap;
+}
+
+/* ============================================
+   Data Master Management UI
+   ============================================ */
+.data-master-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.data-master-stat {
+  background: var(--white);
+  border-radius: 10px;
+  padding: 20px;
+  border: 1px solid var(--border-color);
+  border-left: 4px solid var(--primary-blue);
+  box-shadow: var(--shadow-sm);
+}
+
+.data-master-stat .stat-icon {
+  font-size: 24px;
+  color: var(--primary-blue);
+  margin-bottom: 8px;
+}
+
+.data-master-stat .stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+
+.data-master-stat .stat-label {
+  font-size: 0.85rem;
+  color: var(--text-medium);
 }
 
 /* Print mode untuk admin data table */

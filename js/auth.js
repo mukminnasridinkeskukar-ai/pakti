@@ -30,10 +30,10 @@ let currentUser = null;
 })();
 
 // Halaman yang membutuhkan login
-const RESTRICTED_PAGES = ['admin'];
+const RESTRICTED_PAGES = ['admin', 'pembuatanPAK', 'dataMaster'];
 
 // Halaman yang hanya bisa diakses admin
-const ADMIN_ONLY_PAGES = ['admin'];
+const ADMIN_ONLY_PAGES = ['admin', 'pembuatanPAK', 'dataMaster'];
 
 /**
  * Handle login via modal
@@ -166,10 +166,13 @@ function showApp() {
 }
 
 function updateMenuByRole(role) {
-  // Menu Admin selalu terlihat di sidebar.
-  // Jika user belum login / bukan admin, saat klik akan diminta login
-  // (di-handle oleh navigateTo).
-  const adminMenuItems = document.querySelectorAll('[data-page="admin"]');
+  // Menu administrasi (Data Master, Pembuatan PAK, Kelola Data Pengajuan)
+  // selalu terlihat di sidebar. Saat diklik:
+  // - Jika belum login → modal login muncul
+  // - Jika login sebagai non-admin → ditolak (admin only)
+  const adminMenuItems = document.querySelectorAll(
+    '[data-page="admin"], [data-page="pembuatanPAK"], [data-page="dataMaster"]'
+  );
   adminMenuItems.forEach((item) => {
     item.style.display = 'flex';
   });

@@ -415,3 +415,252 @@ async function loginAdminUser(username, password) {
   if (error) throw error;
   return data || null;
 }
+
+/* ============================================
+ * DATA MASTER (Sheet DATA) - Sumber untuk Pembuatan PAK
+ * ============================================
+ * Tabel ini terpisah dari pengajuan_pak.
+ * Admin input data master + Angka Kredit di sini.
+ */
+
+/**
+ * Map row data_master (snake_case DB) ke format UI
+ */
+function mapDataMasterToUI(row) {
+  if (!row) return null;
+  return {
+    _id: row.id,
+    _raw: row,
+
+    // Personal
+    NIP: row.nip || '',
+    'Nama Lengkap dengan Gelar': row.nama || '',
+    'No Karpeg': row.no_karpeg || '',
+    'Tempat & Tanggal Lahir':
+      row.tempat_lahir && row.tanggal_lahir
+        ? `${row.tempat_lahir}, ${row.tanggal_lahir}`
+        : row.tempat_lahir || row.tanggal_lahir || '',
+    Pendidikan: row.pendidikan || '',
+    'Jenis Kelamin': row.jenis_kelamin || '',
+    'Pangkat/Gol': row.pangkat && row.golongan ? `${row.pangkat} / ${row.golongan}` : row.pangkat || row.golongan || '',
+    'TMT Pangkat': row.tmt_pangkat || '',
+    'Jenis JF': row.jabatan_jf || '',
+    'Jenjang JF': '',
+    'TMT JF': row.tmt_jf || '',
+    'Masa Kerja Gol': row.masa_kerja_gol || '',
+    'Satuan Kerja': row.unit_kerja || '',
+    Instansi: row.instansi || 'Dinas Kesehatan Kab. Kutai Kartanegara',
+
+    // AK Lama
+    akLamaPendidikan: row.ak_lama_pendidikan || 0,
+    akLamaTugasPokok: row.ak_lama_tugas_pokok || 0,
+    akLamaPengembangan: row.ak_lama_pengembangan || 0,
+    akLamaPenunjang: row.ak_lama_penunjang || 0,
+
+    // AK Baru
+    akBaruPendidikan: row.ak_baru_pendidikan || 0,
+    akBaruTugasPokok: row.ak_baru_tugas_pokok || 0,
+    akBaruPengembangan: row.ak_baru_pengembangan || 0,
+    akBaruPenunjang: row.ak_baru_penunjang || 0,
+
+    // AK Minimal
+    akMinimalPangkat: row.ak_minimal_pangkat || 0,
+    akMinimalJenjang: row.ak_minimal_jenjang || 0,
+    akMinimalPengembangan: row.ak_minimal_pengembangan || 0,
+
+    // Nilai Dasar (Integrasi)
+    nilaiDasar: row.nilai_das || 0,
+
+    // Penilaian Kinerja
+    periodePenilaian: row.periode_penilaian || '',
+    tahunPenilaian: row.tahun_penilaian || '',
+    bulanPenilaian: row.bulan_penilaian || 12,
+    predikatKinerja: row.predikat_kinerja || 'Baik',
+
+    // Penetapan
+    tanggalPenetapan: row.tanggal_penetapan || '',
+    lokasiPenetapan: row.lokasi_penetapan || 'Tenggarong',
+    namaPejabat: row.nama_pejabat || '',
+    nipPejabat: row.nip_pejabat || '',
+    rekomendasi: row.rekomendasi || '',
+
+    updated_at: row.updated_at || row.created_at || '',
+  };
+}
+
+/**
+ * Fetch semua data master
+ */
+async function fetchAllDataMaster() {
+  if (!isSupabaseReady()) {
+    throw new Error('Supabase belum dikonfigurasi');
+  }
+
+  const { data, error } = await supabaseClient
+    .from(TABLE_DATA_MASTER)
+    .select('*')
+    .order('nama', { ascending: true });
+
+  if (error) throw error;
+  return (data || []).map(mapDataMasterToUI);
+}
+
+/**
+ * Fetch data master by ID
+ */
+async function fetchDataMasterById(id) {
+  if (!isSupabaseReady()) {
+    throw new Error('Supabase belum dikonfigurasi');
+  }
+
+  const { data, error } = await supabaseClient
+    .from(TABLE_DATA_MASTER)
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+
+  if (error) throw error;
+  return mapDataMasterToUI(data);
+}
+
+/**
+ * Insert data master baru
+ */
+async function insertDataMaster(formData) {
+  if (!isSupabaseReady()) {
+    throw new Error('Supabase belum dikonfigurasi');
+  }
+
+  const row = {
+    nip: formData.nip,
+    nama: formData.nama,
+    no_karpeg: formData.no_karpeg || null,
+    tempat_lahir: formData.tempatLahir || null,
+    tanggal_lahir: formData.tanggalLahir || null,
+    pendidikan: formData.pendidikan || null,
+    jenis_kelamin: formData.jenisKelamin || null,
+    pangkat: formData.pangkat || null,
+    golongan: formData.golongan || null,
+    tmt_pangkat: formData.tmtPangkat || null,
+    jabatan_jf: formData.jabatanJf || null,
+    tmt_jf: formData.tmtJf || null,
+    masa_kerja_gol: formData.masaKerjaGol || null,
+    unit_kerja: formData.unitKerja || null,
+    instansi: formData.instansi || 'Dinas Kesehatan Kab. Kutai Kartanegara',
+
+    ak_lama_pendidikan: formData.akLamaPendidikan || 0,
+    ak_lama_tugas_pokok: formData.akLamaTugasPokok || 0,
+    ak_lama_pengembangan: formData.akLamaPengembangan || 0,
+    ak_lama_penunjang: formData.akLamaPenunjang || 0,
+
+    ak_baru_pendidikan: formData.akBaruPendidikan || 0,
+    ak_baru_tugas_pokok: formData.akBaruTugasPokok || 0,
+    ak_baru_pengembangan: formData.akBaruPengembangan || 0,
+    ak_baru_penunjang: formData.akBaruPenunjang || 0,
+
+    ak_minimal_pangkat: formData.akMinimalPangkat || 0,
+    ak_minimal_jenjang: formData.akMinimalJenjang || 0,
+    ak_minimal_pengembangan: formData.akMinimalPengembangan || 0,
+
+    nilai_das: formData.nilaiDasar || 0,
+
+    periode_penilaian: formData.periodePenilaian || null,
+    tahun_penilaian: formData.tahunPenilaian || null,
+    bulan_penilaian: formData.bulanPenilaian || 12,
+    predikat_kinerja: formData.predikatKinerja || 'Baik',
+
+    tanggal_penetapan: formData.tanggalPenetapan || null,
+    lokasi_penetapan: formData.lokasiPenetapan || 'Tenggarong',
+    nama_pejabat: formData.namaPejabat || null,
+    nip_pejabat: formData.nipPejabat || null,
+    rekomendasi: formData.rekomendasi || null,
+  };
+
+  const { data, error } = await supabaseClient
+    .from(TABLE_DATA_MASTER)
+    .insert(row)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return mapDataMasterToUI(data);
+}
+
+/**
+ * Update data master
+ */
+async function updateDataMaster(id, formData) {
+  if (!isSupabaseReady()) {
+    throw new Error('Supabase belum dikonfigurasi');
+  }
+
+  const row = {
+    nip: formData.nip,
+    nama: formData.nama,
+    no_karpeg: formData.no_karpeg || null,
+    tempat_lahir: formData.tempatLahir || null,
+    tanggal_lahir: formData.tanggalLahir || null,
+    pendidikan: formData.pendidikan || null,
+    jenis_kelamin: formData.jenisKelamin || null,
+    pangkat: formData.pangkat || null,
+    golongan: formData.golongan || null,
+    tmt_pangkat: formData.tmtPangkat || null,
+    jabatan_jf: formData.jabatanJf || null,
+    tmt_jf: formData.tmtJf || null,
+    masa_kerja_gol: formData.masaKerjaGol || null,
+    unit_kerja: formData.unitKerja || null,
+    instansi: formData.instansi || 'Dinas Kesehatan Kab. Kutai Kartanegara',
+
+    ak_lama_pendidikan: formData.akLamaPendidikan || 0,
+    ak_lama_tugas_pokok: formData.akLamaTugasPokok || 0,
+    ak_lama_pengembangan: formData.akLamaPengembangan || 0,
+    ak_lama_penunjang: formData.akLamaPenunjang || 0,
+
+    ak_baru_pendidikan: formData.akBaruPendidikan || 0,
+    ak_baru_tugas_pokok: formData.akBaruTugasPokok || 0,
+    ak_baru_pengembangan: formData.akBaruPengembangan || 0,
+    ak_baru_penunjang: formData.akBaruPenunjang || 0,
+
+    ak_minimal_pangkat: formData.akMinimalPangkat || 0,
+    ak_minimal_jenjang: formData.akMinimalJenjang || 0,
+    ak_minimal_pengembangan: formData.akMinimalPengembangan || 0,
+
+    nilai_das: formData.nilaiDasar || 0,
+
+    periode_penilaian: formData.periodePenilaian || null,
+    tahun_penilaian: formData.tahunPenilaian || null,
+    bulan_penilaian: formData.bulanPenilaian || 12,
+    predikat_kinerja: formData.predikatKinerja || 'Baik',
+
+    tanggal_penetapan: formData.tanggalPenetapan || null,
+    lokasi_penetapan: formData.lokasiPenetapan || 'Tenggarong',
+    nama_pejabat: formData.namaPejabat || null,
+    nip_pejabat: formData.nipPejabat || null,
+    rekomendasi: formData.rekomendasi || null,
+
+    updated_at: new Date().toISOString(),
+  };
+
+  const { data, error } = await supabaseClient
+    .from(TABLE_DATA_MASTER)
+    .update(row)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return mapDataMasterToUI(data);
+}
+
+/**
+ * Hapus data master
+ */
+async function deleteDataMaster(id) {
+  if (!isSupabaseReady()) {
+    throw new Error('Supabase belum dikonfigurasi');
+  }
+
+  const { error } = await supabaseClient.from(TABLE_DATA_MASTER).delete().eq('id', id);
+  if (error) throw error;
+  return true;
+}

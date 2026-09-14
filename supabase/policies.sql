@@ -66,6 +66,39 @@ CREATE POLICY "Allow public read admin_users"
     USING (is_active = true);
 
 -- ============================================
+-- POLICIES: data_master (Sheet DATA)
+-- ============================================
+DROP POLICY IF EXISTS "Allow public read data_master" ON data_master;
+DROP POLICY IF EXISTS "Allow public insert data_master" ON data_master;
+DROP POLICY IF EXISTS "Allow public update data_master" ON data_master;
+DROP POLICY IF EXISTS "Allow public delete data_master" ON data_master;
+
+CREATE POLICY "Allow public read data_master"
+    ON data_master
+    FOR SELECT
+    TO anon, authenticated
+    USING (true);
+
+CREATE POLICY "Allow public insert data_master"
+    ON data_master
+    FOR INSERT
+    TO anon, authenticated
+    WITH CHECK (true);
+
+CREATE POLICY "Allow public update data_master"
+    ON data_master
+    FOR UPDATE
+    TO anon, authenticated
+    USING (true)
+    WITH CHECK (true);
+
+CREATE POLICY "Allow public delete data_master"
+    ON data_master
+    FOR DELETE
+    TO anon, authenticated
+    USING (true);
+
+-- ============================================
 -- STORAGE POLICIES
 -- ============================================
 -- Allow public upload & read dokumen

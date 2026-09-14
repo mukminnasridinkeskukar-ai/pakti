@@ -1,24 +1,22 @@
 /* ============================================
- * PAKTI - Pembuatan PAK Integrasi
+ * PAKTI - Pembuatan PAK Integrasi (4 Dokumen)
  * ============================================
- * Fitur: Pilih data pengajuan → generate PDF
- *        PAK Integrasi siap printout
+ * Generate 4 dokumen PAK dalam 1 PDF:
+ * 1. Konvensional (Sheet 2) - Penetapan AK Konvensional
+ * 2. Integrasi (Sheet 3) - Penyesuaian AK Konvensional ke Integrasi
+ * 3. Kebutuhan AK (Sheet 4) - Perhitungan Kebutuhan Kekurangan AK
+ * 4. PAK Integrasi (Sheet 5) - Penetapan AK Integrasi
  *
- * PDF dibuat via browser print (window.print)
- * dengan stylesheet print khusus (css/print-pak.css)
- *
- * Data pegawai langsung diambil dari tabel
- * pengajuan_pak di Supabase.
+ * Data sumber: tabel data_master (Sheet DATA) di Supabase
+ * Bukan dari pengajuan_pak (Formulir Pengajuan publik)
  * ============================================ */
 
 let currentPAKData = null;
-
-// Cache lokal untuk data pegawai yang sudah difetch
 let pembuatanPAKData = [];
 
 /**
  * Load halaman Pembuatan PAK Integrasi
- * Fetch data pegawai LANGSUNG dari tabel pengajuan_pak di Supabase
+ * Fetch data dari tabel data_master (BUKAN pengajuan_pak)
  */
 async function loadPembuatanPAKData() {
   const select = document.getElementById('pakSelectNIP');
@@ -33,143 +31,85 @@ async function loadPembuatanPAKData() {
       'Pilih pegawai untuk generate PAK Integrasi</p>';
   }
 
-  // Cek apakah Supabase sudah dikonfigurasi
   if (!isSupabaseReady()) {
-    select.innerHTML =
-      '<option value="">⚠️ Supabase belum dikonfigurasi</option>';
+    select.innerHTML = '<option value="">⚠️ Supabase belum dikonfigurasi</option>';
     if (preview) {
       preview.innerHTML =
         '<div style="text-align: center; padding: 40px; color: var(--danger);">' +
         '<i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 12px;"></i>' +
-        '<h3 style="margin-bottom: 8px;">Supabase Belum Dikonfigurasi</h3>' +
-        '<p style="color: var(--text-medium); margin-bottom: 16px;">Edit file <code>js/config.js</code> dan isi:</p>' +
-        '<p style="font-family: monospace; background: var(--light-bg); padding: 8px; border-radius: 4px; margin-bottom: 16px;">' +
-        'SUPABASE_URL = \'https://xxx.supabase.co\'<br>' +
-        'SUPABASE_ANON_KEY = \'xxx\'</p>' +
-        '<p style="color: var(--text-light); font-size: 0.85rem;">Pastikan juga tabel <code>pengajuan_pak</code> sudah dibuat via <code>supabase/schema.sql</code></p>' +
-        '</div>';
+        '<h3>Supabase Belum Dikonfigurasi</h3>' +
+        '<p>Edit file <code>js/config.js</code> dan isi SUPABASE_URL + SUPABASE_ANON_KEY</p></div>';
     }
     return;
   }
 
-  // Show loading state di dropdown
-  select.innerHTML =
-    '<option value="">⏳ Memuat data pegawai dari Supabase...</option>';
-
-  // Tampilkan info jumlah data (akan diupdate setelah fetch)
+  select.innerHTML = '<option value="">⏳ Memuat data dari tabel data_master...</option>';
   updatePembuatanPAKCount('Memuat...');
 
   try {
-    // Fetch LANGSUNG dari tabel pengajuan_pak di Supabase
-    const data = await fetchAllPengajuan();
+    // Fetch dari data_master, BUKAN dari pengajuan_pak
+    const data = await fetchAllDataMaster();
 
     if (!data || data.length === 0) {
       pembuatanPAKData = [];
-      select.innerHTML = '<option value="">-- Belum ada data pegawai --</option>';
-
+      select.innerHTML = '<option value="">-- Belum ada data di Data Master --</option>';
       if (preview) {
         preview.innerHTML =
           '<div style="text-align: center; padding: 40px; color: var(--warning);">' +
           '<i class="fas fa-inbox" style="font-size: 48px; margin-bottom: 12px;"></i>' +
-          '<h3 style="margin-bottom: 8px;">Belum Ada Data Pegawai</h3>' +
-          '<p style="color: var(--text-medium); margin-bottom: 16px;">' +
-          'Tidak ada data di tabel <code>pengajuan_pak</code>.<br>' +
-          'Silakan tambah data pegawai terlebih dahulu via:' +
-          '</p>' +
-          '<div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">' +
-          '<button class="btn btn-primary btn-sm" onclick="navigateTo(\'formulir\')"><i class="fas fa-plus"></i> Formulir Pengajuan</button>' +
-          '<button class="btn btn-success btn-sm" onclick="navigateTo(\'admin\')"><i class="fas fa-file-csv"></i> Upload Massal CSV</button>' +
-          '</div>' +
-          '</div>';
+          '<h3>Belum Ada Data Master</h3>' +
+          '<p>Tabel <code>data_master</code> kosong. Silakan input data di menu <strong>Data Master</strong>.</p>' +
+          '<button class="btn btn-primary btn-sm" style="margin-top: 12px;" onclick="navigateTo(\'dataMaster\')">' +
+          '<i class="fas fa-database"></i> Buka Data Master</button></div>';
       }
       updatePembuatanPAKCount('0 data');
-      toastInfo('Belum ada data pegawai di database');
       return;
     }
 
-    // Sort by name ascending
-    pembuatanPAKData = [...data].sort((a, b) => {
-      const namaA = (a['Nama Lengkap dengan Gelar'] || '').toLowerCase();
-      const namaB = (b['Nama Lengkap dengan Gelar'] || '').toLowerCase();
-      return namaA.localeCompare(namaB);
-    });
+    pembuatanPAKData = [...data];
 
-    // Populate dropdown
     select.innerHTML =
-      '<option value="">-- Pilih NIP / Nama Pegawai (' +
-      pembuatanPAKData.length +
-      ' data) --</option>' +
+      '<option value="">-- Pilih Pegawai (' + pembuatanPAKData.length + ' data) --</option>' +
       pembuatanPAKData
         .map((row) => {
           const nip = row['NIP'] || '-';
           const nama = row['Nama Lengkap dengan Gelar'] || '-';
           const satker = row['Satuan Kerja'] || '-';
-          const status = row['Status'] || 'Menunggu';
-          const label = `${nip} - ${nama} (${satker}) [${status}]`;
+          const label = `${nip} - ${nama} (${satker})`;
           return `<option value="${escapeHtml(String(row._id || ''))}">${escapeHtml(label)}</option>`;
         })
         .join('');
 
-    // Update count badge
-    updatePembuatanPAKCount(pembuatanPAKData.length + ' data pegawai');
-
-    // Sinkronkan juga ke allData (untuk konsistensi dengan modul lain)
-    allData = [...data];
-    if (typeof filteredData !== 'undefined') {
-      filteredData = [...allData];
-    }
-
-    console.log('[Pembuatan PAK] ✅ Loaded', data.length, 'pegawai dari Supabase');
-    toastSuccess(`Berhasil memuat ${data.length} data pegawai`);
+    updatePembuatanPAKCount(pembuatanPAKData.length + ' data');
+    toastSuccess(`Berhasil memuat ${data.length} data dari tabel data_master`);
   } catch (error) {
     console.error('[Pembuatan PAK] Load error:', error);
     select.innerHTML = '<option value="">❌ Gagal memuat data</option>';
-
     if (preview) {
       preview.innerHTML =
         '<div style="text-align: center; padding: 40px; color: var(--danger);">' +
         '<i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 12px;"></i>' +
-        '<h3 style="margin-bottom: 8px;">Gagal Memuat Data</h3>' +
-        '<p style="color: var(--text-medium); margin-bottom: 16px;">' +
-        escapeHtml(error.message || 'Unknown error') +
-        '</p>' +
-        '<div style="background: #fef2f2; padding: 12px; border-radius: 8px; text-align: left; font-size: 0.85rem; max-width: 500px; margin: 0 auto;">' +
-        '<strong>Possible causes:</strong>' +
-        '<ul style="margin: 8px 0 0 20px; line-height: 1.8;">' +
-        '<li>Supabase URL / anon key salah di <code>js/config.js</code></li>' +
-        '<li>Tabel <code>pengajuan_pak</code> belum dibuat (run <code>schema.sql</code>)</li>' +
-        '<li>RLS policies belum di-setup (run <code>policies.sql</code>)</li>' +
-        '<li>Koneksi internet bermasalah</li>' +
-        '</ul></div>' +
-        '<button class="btn btn-primary btn-sm" style="margin-top: 16px;" onclick="loadPembuatanPAKData()">' +
-        '<i class="fas fa-sync-alt"></i> Coba Lagi</button>' +
-        '</div>';
+        '<h3>Gagal Memuat Data</h3><p>' + escapeHtml(error.message || '') + '</p>' +
+        '<button class="btn btn-primary btn-sm" style="margin-top: 12px;" onclick="loadPembuatanPAKData()">' +
+        '<i class="fas fa-sync-alt"></i> Coba Lagi</button></div>';
     }
     updatePembuatanPAKCount('Error');
-    toastError('Gagal memuat data: ' + (error.message || ''));
+    toastError('Gagal memuat: ' + (error.message || ''));
   }
 }
 
-/**
- * Update badge jumlah data di header halaman
- */
 function updatePembuatanPAKCount(text) {
-  const countEl = document.getElementById('pembuatanPAKCount');
-  if (countEl) countEl.textContent = text;
+  const el = document.getElementById('pembuatanPAKCount');
+  if (el) el.textContent = text;
 }
 
-/**
- * Refresh data pegawai dari Supabase
- */
 async function refreshPembuatanPAKData() {
   const btn = document.getElementById('pakRefreshBtn');
   if (btn) {
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memuat...';
   }
-
   await loadPembuatanPAKData();
-
   if (btn) {
     btn.disabled = false;
     btn.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh Data';
@@ -177,7 +117,7 @@ async function refreshPembuatanPAKData() {
 }
 
 /**
- * Generate PAK dari data terpilih
+ * Generate PAK Integrasi - 4 dokumen
  */
 function generatePAKIntegrasi() {
   const select = document.getElementById('pakSelectNIP');
@@ -186,117 +126,54 @@ function generatePAKIntegrasi() {
     return;
   }
 
-  // Cari di pembuatanPAKData (data yang sudah difetch)
-  let row = pembuatanPAKData.find((r) => String(r._id) === String(select.value));
-
-  // Fallback ke allData jika tidak ketemu
+  const row = pembuatanPAKData.find((r) => String(r._id) === String(select.value));
   if (!row) {
-    row = allData.find((r) => String(r._id) === String(select.value));
-  }
-
-  if (!row) {
-    toastError('Data pegawai tidak ditemukan! Coba refresh data.');
+    toastError('Data tidak ditemukan! Coba refresh data.');
     return;
   }
 
   currentPAKData = row;
 
-  // Ambil nilai input angka kredit
-  const getNum = (id) => {
-    const el = document.getElementById(id);
-    if (!el || !el.value) return 0;
-    const n = parseFloat(el.value.replace(',', '.'));
-    return isNaN(n) ? 0 : n;
-  };
+  // Generate 4 dokumen
+  const doc1 = generateKonvensionalHTML(row);
+  const doc2 = generateIntegrasiHTML(row);
+  const doc3 = generateKebutuhanAKHTML(row);
+  const doc4 = generatePAKIntegrasiHTML(row);
 
-  const akLamaPendidikan = getNum('akLamaPendidikan');
-  const akBaruPendidikan = getNum('akBaruPendidikan');
-  const akLamaTugasPokok = getNum('akLamaTugasPokok');
-  const akBaruTugasPokok = getNum('akBaruTugasPokok');
-  const akLamaPengembangan = getNum('akLamaPengembangan');
-  const akBaruPengembangan = getNum('akBaruPengembangan');
-  const akLamaPenunjang = getNum('akLamaPenunjang');
-  const akBaruPenunjang = getNum('akBaruPenunjang');
-
-  const akMinimalPangkat = getNum('akMinimalPangkat');
-  const akMinimalJenjang = getNum('akMinimalJenjang');
-  const akMinimalPengembangan = getNum('akMinimalPengembangan');
-
-  const penilaianPeriode = document.getElementById('pakPeriodePenilaian')?.value || '';
-  const tanggalPenetapan = document.getElementById('pakTanggalPenetapan')?.value || '';
-  const lokasiPenetapan = document.getElementById('pakLokasiPenetapan')?.value || 'Tenggarong';
-  const namaPejabat = document.getElementById('pakNamaPejabat')?.value || '';
-  const nipPejabat = document.getElementById('pakNipPejabat')?.value || '';
-  const rekomendasi = document.getElementById('pakRekomendasi')?.value || '';
-
-  // Hitung total
-  const totalLama = akLamaPendidikan + akLamaTugasPokok + akLamaPengembangan + akLamaPenunjang;
-  const totalBaru = akBaruPendidikan + akBaruTugasPokok + akBaruPengembangan + akBaruPenunjang;
-  const totalJumlah = totalLama + totalBaru;
-
-  // Generate HTML untuk print
-  const html = generatePAKHTML(
-    row,
-    {
-      akLamaPendidikan,
-      akBaruPendidikan,
-      akLamaTugasPokok,
-      akBaruTugasPokok,
-      akLamaPengembangan,
-      akBaruPengembangan,
-      akLamaPenunjang,
-      akBaruPenunjang,
-      totalLama,
-      totalBaru,
-      totalJumlah,
-      akMinimalPangkat,
-      akMinimalJenjang,
-      akMinimalPengembangan,
-      kekuranganPangkat: Math.abs(totalJumlah - akMinimalPangkat),
-      kekuranganJenjang: Math.abs(totalJumlah - akMinimalJenjang),
-      kekuranganPengembangan: akMinimalPengembangan - (akLamaPengembangan + akBaruPengembangan),
-    },
-    {
-      penilaianPeriode,
-      tanggalPenetapan,
-      lokasiPenetapan,
-      namaPejabat,
-      nipPejabat,
-      rekomendasi,
-    }
-  );
+  // Gabung jadi 1 print area dengan page-break
+  const html = `
+    <div class="pak-print-pages" id="pakPrintArea">
+      <div class="pak-page">${doc1}</div>
+      <div class="pak-page">${doc2}</div>
+      <div class="pak-page">${doc3}</div>
+      <div class="pak-page">${doc4}</div>
+    </div>
+  `;
 
   const preview = document.getElementById('pakPreview');
   if (preview) preview.innerHTML = html;
 
-  // Tampilkan tombol print
   const printBtn = document.getElementById('pakPrintBtn');
   if (printBtn) printBtn.style.display = 'inline-flex';
 
-  toastSuccess('PAK Integrasi berhasil di-generate. Klik tombol Print untuk mencetak.');
+  toastSuccess('4 dokumen PAK berhasil di-generate. Klik Print untuk mencetak semua jadi 1 PDF.');
 
-  // Scroll ke preview
   if (preview) {
     preview.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 }
 
 /**
- * Generate HTML untuk PAK Integrasi (printable)
+ * Helper: Kop Surat (sama untuk semua dokumen)
  */
-function generatePAKHTML(row, ak, meta) {
-  const safeRow = (val) => escapeHtml(val || '-');
-
-  // Kop Surat
-  const kopInstansi = `
+function getKopSurat(instansi) {
+  return `
     <table class="kop-table">
       <tr>
-        <td class="kop-logo">
-          <div class="kop-emblem">⚖</div>
-        </td>
+        <td class="kop-logo"><div class="kop-emblem">⚖</div></td>
         <td class="kop-text">
           <div class="kop-line1">PEMERINTAH KABUPATEN KUTAI KARTANEGARA</div>
-          <div class="kop-line2">DINAS KESEHATAN</div>
+          <div class="kop-line2">${escapeHtml(instansi || 'DINAS KESEHATAN')}</div>
           <div class="kop-line3">Jalan Cut Nyak Dien No. 33, Tenggarong, Kutai Kartanegara 75513</div>
           <div class="kop-line3">Telepon: (0541) 6610005 | Email: sdmkdinkeskukar2024@gmail.com</div>
         </td>
@@ -304,176 +181,295 @@ function generatePAKHTML(row, ak, meta) {
     </table>
     <div class="kop-line"></div>
   `;
+}
+
+/**
+ * Helper: Format angka ke 2 desimal
+ */
+function fmt(num) {
+  return (parseFloat(num) || 0).toFixed(2);
+}
+
+/* ============================================
+ * DOKUMEN 1: KONVENSIONAL (Sheet 2)
+ * ============================================ */
+function generateKonvensionalHTML(row) {
+  const totalLama = (row.akLamaPendidikan || 0) + (row.akLamaTugasPokok || 0) + (row.akLamaPengembangan || 0);
+  const totalBaru = (row.akBaruPendidikan || 0) + (row.akBaruTugasPokok || 0) + (row.akBaruPengembangan || 0);
+  const totalPenunjangLama = row.akLamaPenunjang || 0;
+  const totalPenunjangBaru = row.akBaruPenunjang || 0;
+  const grandTotalLama = totalLama + totalPenunjangLama;
+  const grandTotalBaru = totalBaru + totalPenunjangBaru;
+  const grandTotal = grandTotalLama + grandTotalBaru;
 
   return `
-    <div class="pak-document" id="pakPrintArea">
-      ${kopInstansi}
+    ${getKopSurat(row.Instansi)}
+    <div class="doc-title">
+      <h2>PENETAPAN ANGKA KREDIT KONVENSIONAL</h2>
+      ${row.periodePenilaian ? `<p>Periode Penilaian: ${escapeHtml(row.periodePenilaian)}</p>` : ''}
+    </div>
+    <table class="pak-table">
+      <tr><td class="section-header" colspan="5">I. KETERANGAN PERORANGAN</td></tr>
+      <tr><td class="col-no">1</td><td class="col-label">NAMA</td><td class="col-value" colspan="3">: ${escapeHtml(row['Nama Lengkap dengan Gelar'] || '-')}</td></tr>
+      <tr><td class="col-no">2</td><td class="col-label">NIP / NRK</td><td class="col-value" colspan="3">: ${escapeHtml(row['NIP'] || '-')}</td></tr>
+      <tr><td class="col-no">3</td><td class="col-label">NOMOR SERI KARPEG</td><td class="col-value" colspan="3">: ${escapeHtml(row['No Karpeg'] || '-')}</td></tr>
+      <tr><td class="col-no">4</td><td class="col-label">PANGKAT/GOLONGAN RUANG/TMT</td><td class="col-value" colspan="3">: ${escapeHtml(row['Pangkat/Gol'] || '-')} ${row['TMT Pangkat'] ? '(TMT: ' + escapeHtml(row['TMT Pangkat']) + ')' : ''}</td></tr>
+      <tr><td class="col-no">5</td><td class="col-label">TEMPAT/TANGGAL LAHIR</td><td class="col-value" colspan="3">: ${escapeHtml(row['Tempat & Tanggal Lahir'] || '-')}</td></tr>
+      <tr><td class="col-no">6</td><td class="col-label">JENIS KELAMIN</td><td class="col-value" colspan="3">: ${escapeHtml(row['Jenis Kelamin'] || '-')}</td></tr>
+      <tr><td class="col-no">7</td><td class="col-label">PENDIDIKAN</td><td class="col-value" colspan="3">: ${escapeHtml(row.Pendidikan || '-')}</td></tr>
+      <tr><td class="col-no">8</td><td class="col-label">JABATAN/TMT</td><td class="col-value" colspan="3">: ${escapeHtml(row['Jenis JF'] || '-')} ${row['TMT JF'] ? '(TMT: ' + escapeHtml(row['TMT JF']) + ')' : ''}</td></tr>
+      <tr><td class="col-no">9</td><td class="col-label">MASA KERJA GOLONGAN</td><td class="col-value" colspan="3">: ${escapeHtml(row['Masa Kerja Gol'] || '-')}</td></tr>
+      <tr><td class="col-no">10</td><td class="col-label">UNIT KERJA</td><td class="col-value" colspan="3">: ${escapeHtml(row['Satuan Kerja'] || '-')}</td></tr>
+      <tr><td class="section-header" colspan="5">II. PENETAPAN ANGKA KREDIT</td></tr>
+      <tr class="ak-header-row">
+        <th class="col-no">NO</th><th class="col-label">UNSUR</th>
+        <th class="col-ak">LAMA</th><th class="col-ak">BARU</th><th class="col-ak">JUMLAH</th>
+      </tr>
+      <tr><td class="col-no">1</td><td class="col-label">A. Pendidikan</td>
+        <td class="col-ak">${fmt(row.akLamaPendidikan)}</td><td class="col-ak">${fmt(row.akBaruPendidikan)}</td><td class="col-ak"><strong>${fmt((row.akLamaPendidikan || 0) + (row.akBaruPendidikan || 0))}</strong></td></tr>
+      <tr><td class="col-no">2</td><td class="col-label">B. Tugas Pokok</td>
+        <td class="col-ak">${fmt(row.akLamaTugasPokok)}</td><td class="col-ak">${fmt(row.akBaruTugasPokok)}</td><td class="col-ak"><strong>${fmt((row.akLamaTugasPokok || 0) + (row.akBaruTugasPokok || 0))}</strong></td></tr>
+      <tr><td class="col-no">3</td><td class="col-label">C. Pengembangan Profesi</td>
+        <td class="col-ak">${fmt(row.akLamaPengembangan)}</td><td class="col-ak">${fmt(row.akBaruPengembangan)}</td><td class="col-ak"><strong>${fmt((row.akLamaPengembangan || 0) + (row.akBaruPengembangan || 0))}</strong></td></tr>
+      <tr><td colspan="2" class="col-label"><strong>Jumlah Unsur Utama</strong></td>
+        <td class="col-ak"><strong>${fmt(totalLama)}</strong></td><td class="col-ak"><strong>${fmt(totalBaru)}</strong></td><td class="col-ak"><strong>${fmt(totalLama + totalBaru)}</strong></td></tr>
+      <tr><td class="col-no">2</td><td class="col-label">Unsur Penunjang</td>
+        <td class="col-ak">${fmt(row.akLamaPenunjang)}</td><td class="col-ak">${fmt(row.akBaruPenunjang)}</td><td class="col-ak"><strong>${fmt(totalPenunjangLama + totalPenunjangBaru)}</strong></td></tr>
+      <tr><td colspan="2" class="col-label"><strong>Jumlah Unsur Penunjang</strong></td>
+        <td class="col-ak"><strong>${fmt(totalPenunjangLama)}</strong></td><td class="col-ak"><strong>${fmt(totalPenunjangBaru)}</strong></td><td class="col-ak"><strong>${fmt(totalPenunjangLama + totalPenunjangBaru)}</strong></td></tr>
+      <tr class="ak-total-row"><td colspan="2"><strong>TOTAL ANGKA KREDIT</strong></td>
+        <td class="col-ak"><strong>${fmt(grandTotalLama)}</strong></td><td class="col-ak"><strong>${fmt(grandTotalBaru)}</strong></td><td class="col-ak"><strong>${fmt(grandTotal)}</strong></td></tr>
+    </table>
+    <table class="ttd-table">
+      <tr><td class="ttd-cell">
+        <p>Ditetapkan di : ${escapeHtml(row.lokasiPenetapan || 'Tenggarong')}</p>
+        <p>Tanggal : ${escapeHtml(row.tanggalPenetapan || formatDate(new Date().toISOString()))}</p>
+        <p style="margin-top: 8px;">Pejabat Penilai Kinerja,</p>
+        <div class="ttd-space"></div>
+        <p><strong>${escapeHtml(row.namaPejabat || '(..............................)')}</strong></p>
+        <p>NIP. ${escapeHtml(row.nipPejabat || '..............................')}</p>
+      </td></tr>
+    </table>
+  `;
+}
 
-      <div class="doc-title">
-        <h2>PENETAPAN ANGKA KREDIT INTEGRASI</h2>
-        ${meta.penilaianPeriode ? `<p>Periode Penilaian: ${escapeHtml(meta.penilaianPeriode)}</p>` : ''}
-      </div>
+/* ============================================
+ * DOKUMEN 2: INTEGRASI (Sheet 3)
+ * ============================================ */
+function generateIntegrasiHTML(row) {
+  const totalKonvensional =
+    (row.akLamaPendidikan || 0) + (row.akBaruPendidikan || 0) +
+    (row.akLamaTugasPokok || 0) + (row.akBaruTugasPokok || 0) +
+    (row.akLamaPengembangan || 0) + (row.akBaruPengembangan || 0) +
+    (row.akLamaPenunjang || 0) + (row.akBaruPenunjang || 0);
 
-      <table class="pak-table section-i">
-        <tr>
-          <td class="section-header" colspan="3">I. KETERANGAN PERORANGAN</td>
-        </tr>
-        <tr>
-          <td class="col-no">1</td>
-          <td class="col-label">NAMA</td>
-          <td class="col-value">: ${safeRow(row['Nama Lengkap dengan Gelar'])}</td>
-        </tr>
-        <tr>
-          <td class="col-no">2</td>
-          <td class="col-label">NIP / NRK</td>
-          <td class="col-value">: ${safeRow(row['NIP'])}</td>
-        </tr>
-        <tr>
-          <td class="col-no">3</td>
-          <td class="col-label">NOMOR SERI KARPEG</td>
-          <td class="col-value">: ${safeRow(row['No Karpeg'])}</td>
-        </tr>
-        <tr>
-          <td class="col-no">4</td>
-          <td class="col-label">PANGKAT / GOLONGAN RUANG</td>
-          <td class="col-value">: ${safeRow(row['Pangkat/Gol'])}</td>
-        </tr>
-        <tr>
-          <td class="col-no">5</td>
-          <td class="col-label">TEMPAT / TANGGAL LAHIR</td>
-          <td class="col-value">: ${safeRow(row['Tempat & Tanggal Lahir'])}</td>
-        </tr>
-        <tr>
-          <td class="col-no">6</td>
-          <td class="col-label">JENIS KELAMIN</td>
-          <td class="col-value">: ${safeRow(row['Jenis Kelamin'])}</td>
-        </tr>
-        <tr>
-          <td class="col-no">7</td>
-          <td class="col-label">PENDIDIKAN</td>
-          <td class="col-value">: ${safeRow(row['Pendidikan'])}</td>
-        </tr>
-        <tr>
-          <td class="col-no">8</td>
-          <td class="col-label">JABATAN / TMT</td>
-          <td class="col-value">: ${safeRow(row['Jenis JF'])} - ${safeRow(row['Jenjang JF'])} (TMT: ${safeRow(row['TMT JF'])})</td>
-        </tr>
-        <tr>
-          <td class="col-no">9</td>
-          <td class="col-label">MASA KERJA GOLONGAN</td>
-          <td class="col-value">: ${safeRow(row['Masa Kerja Gol'])}</td>
-        </tr>
-        <tr>
-          <td class="col-no">10</td>
-          <td class="col-label">UNIT KERJA</td>
-          <td class="col-value">: ${safeRow(row['Satuan Kerja'])}</td>
-        </tr>
-      </table>
+  const nilaiDasar = row.nilaiDasar || 0;
+  const akDinilaikan = totalKonvensional - nilaiDasar;
 
-      <table class="pak-table section-ii">
-        <tr>
-          <td class="section-header" colspan="5">II. PENETAPAN ANGKA KREDIT</td>
-        </tr>
-        <tr class="ak-header-row">
-          <th class="col-no">NO</th>
-          <th class="col-label">UNSUR</th>
-          <th class="col-ak">LAMA</th>
-          <th class="col-ak">BARU</th>
-          <th class="col-ak">JUMLAH</th>
-        </tr>
-        <tr>
-          <td class="col-no">1</td>
-          <td class="col-label">Angka Kredit Pendidikan</td>
-          <td class="col-ak">${ak.akLamaPendidikan.toFixed(2)}</td>
-          <td class="col-ak">${ak.akBaruPendidikan.toFixed(2)}</td>
-          <td class="col-ak"><strong>${(ak.akLamaPendidikan + ak.akBaruPendidikan).toFixed(2)}</strong></td>
-        </tr>
-        <tr>
-          <td class="col-no">2</td>
-          <td class="col-label">Angka Kredit Tugas Pokok / Jabatan</td>
-          <td class="col-ak">${ak.akLamaTugasPokok.toFixed(2)}</td>
-          <td class="col-ak">${ak.akBaruTugasPokok.toFixed(2)}</td>
-          <td class="col-ak"><strong>${(ak.akLamaTugasPokok + ak.akBaruTugasPokok).toFixed(2)}</strong></td>
-        </tr>
-        <tr>
-          <td class="col-no">3</td>
-          <td class="col-label">Angka Kredit Pengembangan Profesi</td>
-          <td class="col-ak">${ak.akLamaPengembangan.toFixed(2)}</td>
-          <td class="col-ak">${ak.akBaruPengembangan.toFixed(2)}</td>
-          <td class="col-ak"><strong>${(ak.akLamaPengembangan + ak.akBaruPengembangan).toFixed(2)}</strong></td>
-        </tr>
-        <tr>
-          <td class="col-no">4</td>
-          <td class="col-label">Angka Kredit Penunjang</td>
-          <td class="col-ak">${ak.akLamaPenunjang.toFixed(2)}</td>
-          <td class="col-ak">${ak.akBaruPenunjang.toFixed(2)}</td>
-          <td class="col-ak"><strong>${(ak.akLamaPenunjang + ak.akBaruPenunjang).toFixed(2)}</strong></td>
-        </tr>
-        <tr class="ak-total-row">
-          <td colspan="2"><strong>TOTAL ANGKA KREDIT</strong></td>
-          <td class="col-ak"><strong>${ak.totalLama.toFixed(2)}</strong></td>
-          <td class="col-ak"><strong>${ak.totalBaru.toFixed(2)}</strong></td>
-          <td class="col-ak"><strong>${ak.totalJumlah.toFixed(2)}</strong></td>
-        </tr>
-      </table>
+  return `
+    ${getKopSurat(row.Instansi)}
+    <div class="doc-title">
+      <h2>FORMULIR PERHITUNGAN DAN AKUMULASI ANGKA KREDIT PADA PENILAIAN INTEGRASI</h2>
+      <p><strong>JABATAN FUNGSIONAL YANG DINILAI</strong></p>
+    </div>
+    <table class="pak-table">
+      <tr><td class="section-header" colspan="3">I. KETERANGAN PERORANGAN</td></tr>
+      <tr><td class="col-label">NAMA</td><td class="col-value" colspan="2">: ${escapeHtml(row['Nama Lengkap dengan Gelar'] || '-')}</td></tr>
+      <tr><td class="col-label">NIP/NRK</td><td class="col-value" colspan="2">: ${escapeHtml(row['NIP'] || '-')}</td></tr>
+      <tr><td class="col-label">NOMOR SERI KARPEG</td><td class="col-value" colspan="2">: ${escapeHtml(row['No Karpeg'] || '-')}</td></tr>
+      <tr><td class="col-label">PANGKAT/GOLONGAN RUANG</td><td class="col-value" colspan="2">: ${escapeHtml(row['Pangkat/Gol'] || '-')}</td></tr>
+      <tr><td class="col-label">TEMPAT/TANGGAL LAHIR</td><td class="col-value" colspan="2">: ${escapeHtml(row['Tempat & Tanggal Lahir'] || '-')}</td></tr>
+      <tr><td class="col-label">JENIS KELAMIN</td><td class="col-value" colspan="2">: ${escapeHtml(row['Jenis Kelamin'] || '-')}</td></tr>
+      <tr><td class="col-label">PENDIDIKAN</td><td class="col-value" colspan="2">: ${escapeHtml(row.Pendidikan || '-')}</td></tr>
+      <tr><td class="col-label">JABATAN/TMT</td><td class="col-value" colspan="2">: ${escapeHtml(row['Jenis JF'] || '-')} ${row['TMT JF'] ? '(TMT: ' + escapeHtml(row['TMT JF']) + ')' : ''}</td></tr>
+      <tr><td class="col-label">MASA KERJA GOLONGAN</td><td class="col-value" colspan="2">: ${escapeHtml(row['Masa Kerja Gol'] || '-')}</td></tr>
+      <tr><td class="col-label">UNIT KERJA</td><td class="col-value" colspan="2">: ${escapeHtml(row['Satuan Kerja'] || '-')}</td></tr>
+      <tr><td class="section-header" colspan="3">II. PERHITUNGAN PENYESUAIAN ANGKA KREDIT INTEGRASI</td></tr>
+      <tr><td class="section-sub-header" colspan="3">JUMLAH ANGKA KREDIT YANG DIPEROLEH</td></tr>
+      <tr class="ak-header-row">
+        <th class="col-label">JUMLAH AK KONVENSIONAL</th>
+        <th class="col-ak">NILAI DASAR</th>
+        <th class="col-ak">AK YANG DINILAIKAN</th>
+      </tr>
+      <tr>
+        <td class="col-ak">${fmt(totalKonvensional)}</td>
+        <td class="col-ak">${fmt(nilaiDasar)}</td>
+        <td class="col-ak"><strong>${fmt(akDinilaikan)}</strong></td>
+      </tr>
+    </table>
+    <table class="ttd-table">
+      <tr><td class="ttd-cell">
+        <p>Ditetapkan di : ${escapeHtml(row.lokasiPenetapan || 'Tenggarong')}</p>
+        <p>Tanggal : ${escapeHtml(row.tanggalPenetapan || formatDate(new Date().toISOString()))}</p>
+        <p style="margin-top: 8px;">Pejabat Penilai Kinerja,</p>
+        <div class="ttd-space"></div>
+        <p><strong>${escapeHtml(row.namaPejabat || '(..............................)')}</strong></p>
+        <p>NIP. ${escapeHtml(row.nipPejabat || '..............................')}</p>
+      </td></tr>
+    </table>
+  `;
+}
 
-      <table class="pak-table section-iii">
-        <tr>
-          <td class="section-header" colspan="3">III. KETERANGAN</td>
-        </tr>
-        <tr class="ak-header-row">
-          <th class="col-label">URAIAN</th>
-          <th class="col-ak">KEBUTUHAN</th>
-          <th class="col-ak">KEKURANGAN / KELEBIHAN</th>
-        </tr>
-        <tr>
-          <td class="col-label">Angka Kredit minimal untuk kenaikan Pangkat</td>
-          <td class="col-ak">${ak.akMinimalPangkat.toFixed(2)}</td>
-          <td class="col-ak">${ak.kekuranganPangkat.toFixed(2)}</td>
-        </tr>
-        <tr>
-          <td class="col-label">Angka Kredit minimal untuk kenaikan Jenjang Jabatan</td>
-          <td class="col-ak">${ak.akMinimalJenjang.toFixed(2)}</td>
-          <td class="col-ak">${ak.kekuranganJenjang.toFixed(2)}</td>
-        </tr>
-        <tr>
-          <td class="col-label">Angka Kredit minimal Pengembangan Profesi</td>
-          <td class="col-ak">${ak.akMinimalPengembangan.toFixed(2)}</td>
-          <td class="col-ak">${ak.kekuranganPengembangan.toFixed(2)}</td>
-        </tr>
-      </table>
+/* ============================================
+ * DOKUMEN 3: KEBUTUHAN AK (Sheet 4)
+ * ============================================ */
+function generateKebutuhanAKHTML(row) {
+  const totalLama = (row.akLamaPendidikan || 0) + (row.akLamaTugasPokok || 0) + (row.akLamaPengembangan || 0);
+  const totalBaru = (row.akBaruPendidikan || 0) + (row.akBaruTugasPokok || 0) + (row.akBaruPengembangan || 0);
+  const totalJumlah = totalLama + totalBaru;
 
-      ${meta.rekomendasi ? `
-        <div class="rekomendasi-box">
-          <strong>REKOMENDASI:</strong><br>
-          ${escapeHtml(meta.rekomendasi).replace(/\n/g, '<br>')}
-        </div>
-      ` : ''}
+  const totalPenunjang = (row.akLamaPenunjang || 0) + (row.akBaruPenunjang || 0);
+  const grandTotal = totalJumlah + totalPenunjang;
 
-      <table class="ttd-table">
-        <tr>
-          <td class="ttd-cell">
-            <p>Ditetapkan di : ${escapeHtml(meta.lokasiPenetapan)}</p>
-            <p>Tanggal : ${escapeHtml(meta.tanggalPenetapan || formatDate(new Date().toISOString()))}</p>
-            <p style="margin-top: 8px;">Pejabat Penilai Kinerja,</p>
-            <div class="ttd-space"></div>
-            <p><strong>${escapeHtml(meta.namaPejabat) || '(..............................)'}</strong></p>
-            <p>NIP. ${escapeHtml(meta.nipPejabat) || '..............................'}</p>
-          </td>
-        </tr>
-      </table>
+  const kekuranganPangkat = Math.abs(grandTotal - (row.akMinimalPangkat || 0));
+  const kekuranganJenjang = Math.abs(grandTotal - (row.akMinimalJenjang || 0));
+  const kekuranganPengembangan = (row.akMinimalPengembangan || 0) - ((row.akLamaPengembangan || 0) + (row.akBaruPengembangan || 0));
 
-      <div class="doc-footer">
-        <p>Dokumen ini dihasilkan secara elektronik oleh Sistem PAKTI (Pengelolaan Angka Kredit Integrasi)</p>
-        <p>Pemerintah Kabupaten Kutai Kartanegara &copy; ${new Date().getFullYear()}</p>
-      </div>
+  return `
+    ${getKopSurat(row.Instansi)}
+    <div class="doc-title">
+      <h2>FORMULIR PERHITUNGAN KEBUTUHAN KEKURANGAN ANGKA KREDIT</h2>
+      ${row.periodePenilaian ? `<p>Periode Penilaian: ${escapeHtml(row.periodePenilaian)}</p>` : ''}
+    </div>
+    <table class="pak-table">
+      <tr><td class="section-header" colspan="5">I. KETERANGAN PERORANGAN</td></tr>
+      <tr><td class="col-no">1</td><td class="col-label">NAMA</td><td class="col-value" colspan="3">: ${escapeHtml(row['Nama Lengkap dengan Gelar'] || '-')}</td></tr>
+      <tr><td class="col-no">2</td><td class="col-label">NIP/NRK</td><td class="col-value" colspan="3">: ${escapeHtml(row['NIP'] || '-')}</td></tr>
+      <tr><td class="col-no">3</td><td class="col-label">NOMOR SERI KARPEG</td><td class="col-value" colspan="3">: ${escapeHtml(row['No Karpeg'] || '-')}</td></tr>
+      <tr><td class="col-no">4</td><td class="col-label">PANGKAT/GOLONGAN RUANG</td><td class="col-value" colspan="3">: ${escapeHtml(row['Pangkat/Gol'] || '-')}</td></tr>
+      <tr><td class="col-no">5</td><td class="col-label">TEMPAT/TANGGAL LAHIR</td><td class="col-value" colspan="3">: ${escapeHtml(row['Tempat & Tanggal Lahir'] || '-')}</td></tr>
+      <tr><td class="col-no">6</td><td class="col-label">JENIS KELAMIN</td><td class="col-value" colspan="3">: ${escapeHtml(row['Jenis Kelamin'] || '-')}</td></tr>
+      <tr><td class="col-no">7</td><td class="col-label">PENDIDIKAN</td><td class="col-value" colspan="3">: ${escapeHtml(row.Pendidikan || '-')}</td></tr>
+      <tr><td class="col-no">8</td><td class="col-label">JABATAN/TMT</td><td class="col-value" colspan="3">: ${escapeHtml(row['Jenis JF'] || '-')} ${row['TMT JF'] ? '(TMT: ' + escapeHtml(row['TMT JF']) + ')' : ''}</td></tr>
+      <tr><td class="col-no">9</td><td class="col-label">MASA KERJA GOLONGAN</td><td class="col-value" colspan="3">: ${escapeHtml(row['Masa Kerja Gol'] || '-')}</td></tr>
+      <tr><td class="col-no">10</td><td class="col-label">UNIT KERJA</td><td class="col-value" colspan="3">: ${escapeHtml(row['Satuan Kerja'] || '-')}</td></tr>
+      <tr><td class="section-header" colspan="5">II. PERHITUNGAN PENYESUAIAN ANGKA KREDIT DARI KONVENSIONAL KE INTEGRASI</td></tr>
+      <tr class="ak-header-row">
+        <th class="col-no">NO</th><th class="col-label">ANGKA KREDIT KONVENSIONAL</th>
+        <th class="col-ak">JUMLAH</th><th class="col-label">ANGKA KREDIT INTEGRASI</th><th class="col-ak">JUMLAH</th>
+      </tr>
+      <tr><td class="col-no">1</td><td class="col-label">Pendidikan</td><td class="col-ak">${fmt((row.akLamaPendidikan || 0) + (row.akBaruPendidikan || 0))}</td>
+        <td class="col-label">Tugas Jabatan</td><td class="col-ak">${fmt(totalJumlah)}</td></tr>
+      <tr><td class="col-no">2</td><td class="col-label">Tugas Pokok</td><td class="col-ak">${fmt((row.akLamaTugasPokok || 0) + (row.akBaruTugasPokok || 0))}</td>
+        <td class="col-label">Pengembangan Profesi</td><td class="col-ak">${fmt((row.akLamaPengembangan || 0) + (row.akBaruPengembangan || 0))}</td></tr>
+      <tr><td class="col-no">3</td><td class="col-label">Pengembangan Profesi</td><td class="col-ak">${fmt((row.akLamaPengembangan || 0) + (row.akBaruPengembangan || 0))}</td>
+        <td class="col-label">Penunjang</td><td class="col-ak">${fmt(totalPenunjang)}</td></tr>
+      <tr class="ak-total-row"><td colspan="2"><strong>TOTAL</strong></td><td class="col-ak"><strong>${fmt(totalLama + totalBaru + (row.akLamaPenunjang || 0) + (row.akBaruPenunjang || 0))}</strong></td>
+        <td><strong>TOTAL</strong></td><td class="col-ak"><strong>${fmt(grandTotal)}</strong></td></tr>
+      <tr><td class="section-header" colspan="5">III. KETERANGAN</td></tr>
+      <tr class="ak-header-row">
+        <th class="col-label" colspan="3">URAIAN</th>
+        <th class="col-ak" colspan="2">JUMLAH</th>
+      </tr>
+      <tr><td class="col-label" colspan="3">Angka Kredit minimal untuk kenaikan Pangkat</td><td class="col-ak" colspan="2">${fmt(row.akMinimalPangkat)}</td></tr>
+      <tr><td class="col-label" colspan="3">Angka Kredit minimal untuk kenaikan Jenjang Jabatan</td><td class="col-ak" colspan="2">${fmt(row.akMinimalJenjang)}</td></tr>
+      <tr><td class="col-label" colspan="3">Angka Kredit minimal Pengembangan Profesi</td><td class="col-ak" colspan="2">${fmt(row.akMinimalPengembangan)}</td></tr>
+      <tr><td class="col-label" colspan="3"><strong>Kekurangan/Kelebihan AK untuk kenaikan Pangkat</strong></td><td class="col-ak" colspan="2"><strong>${fmt(kekuranganPangkat)}</strong></td></tr>
+      <tr><td class="col-label" colspan="3"><strong>Kekurangan/Kelebihan AK untuk kenaikan Jenjang</strong></td><td class="col-ak" colspan="2"><strong>${fmt(kekuranganJenjang)}</strong></td></tr>
+      <tr><td class="col-label" colspan="3"><strong>Kekurangan/Kelebihan AK Pengembangan Profesi</strong></td><td class="col-ak" colspan="2"><strong>${fmt(kekuranganPengembangan)}</strong></td></tr>
+    </table>
+    ${row.rekomendasi ? `<div class="rekomendasi-box"><strong>REKOMENDASI:</strong><br>${escapeHtml(row.rekomendasi).replace(/\n/g, '<br>')}</div>` : ''}
+    <table class="ttd-table">
+      <tr><td class="ttd-cell">
+        <p>Ditetapkan di : ${escapeHtml(row.lokasiPenetapan || 'Tenggarong')}</p>
+        <p>Tanggal : ${escapeHtml(row.tanggalPenetapan || formatDate(new Date().toISOString()))}</p>
+        <p style="margin-top: 8px;">Pejabat Penilai Kinerja,</p>
+        <div class="ttd-space"></div>
+        <p><strong>${escapeHtml(row.namaPejabat || '(..............................)')}</strong></p>
+        <p>NIP. ${escapeHtml(row.nipPejabat || '..............................')}</p>
+      </td></tr>
+    </table>
+  `;
+}
+
+/* ============================================
+ * DOKUMEN 4: PAK INTEGRASI (Sheet 5)
+ * ============================================ */
+function generatePAKIntegrasiHTML(row) {
+  const totalLama =
+    (row.akLamaPendidikan || 0) +
+    (row.akLamaTugasPokok || 0) +
+    (row.akLamaPengembangan || 0) +
+    (row.akLamaPenunjang || 0);
+  const totalBaru =
+    (row.akBaruPendidikan || 0) +
+    (row.akBaruTugasPokok || 0) +
+    (row.akBaruPengembangan || 0) +
+    (row.akBaruPenunjang || 0);
+  const totalJumlah = totalLama + totalBaru;
+
+  const kekuranganPangkat = Math.abs(totalJumlah - (row.akMinimalPangkat || 0));
+  const kekuranganJenjang = Math.abs(totalJumlah - (row.akMinimalJenjang || 0));
+  const kekuranganPengembangan = (row.akMinimalPengembangan || 0) - ((row.akLamaPengembangan || 0) + (row.akBaruPengembangan || 0));
+
+  return `
+    ${getKopSurat(row.Instansi)}
+    <div class="doc-title">
+      <h2>PENETAPAN ANGKA KREDIT INTEGRASI</h2>
+      ${row.periodePenilaian ? `<p>Periode Penilaian: ${escapeHtml(row.periodePenilaian)}</p>` : ''}
+    </div>
+    <table class="pak-table">
+      <tr><td class="section-header" colspan="5">I. KETERANGAN PERORANGAN</td></tr>
+      <tr><td class="col-no">1</td><td class="col-label">NAMA</td><td class="col-value" colspan="3">: ${escapeHtml(row['Nama Lengkap dengan Gelar'] || '-')}</td></tr>
+      <tr><td class="col-no">2</td><td class="col-label">NIP/NRK</td><td class="col-value" colspan="3">: ${escapeHtml(row['NIP'] || '-')}</td></tr>
+      <tr><td class="col-no">3</td><td class="col-label">NOMOR SERI KARPEG</td><td class="col-value" colspan="3">: ${escapeHtml(row['No Karpeg'] || '-')}</td></tr>
+      <tr><td class="col-no">4</td><td class="col-label">PANGKAT/GOLONGAN RUANG</td><td class="col-value" colspan="3">: ${escapeHtml(row['Pangkat/Gol'] || '-')}</td></tr>
+      <tr><td class="col-no">5</td><td class="col-label">TEMPAT/TANGGAL LAHIR</td><td class="col-value" colspan="3">: ${escapeHtml(row['Tempat & Tanggal Lahir'] || '-')}</td></tr>
+      <tr><td class="col-no">6</td><td class="col-label">JENIS KELAMIN</td><td class="col-value" colspan="3">: ${escapeHtml(row['Jenis Kelamin'] || '-')}</td></tr>
+      <tr><td class="col-no">7</td><td class="col-label">PENDIDIKAN</td><td class="col-value" colspan="3">: ${escapeHtml(row.Pendidikan || '-')}</td></tr>
+      <tr><td class="col-no">8</td><td class="col-label">JABATAN/TMT</td><td class="col-value" colspan="3">: ${escapeHtml(row['Jenis JF'] || '-')} ${row['TMT JF'] ? '(TMT: ' + escapeHtml(row['TMT JF']) + ')' : ''}</td></tr>
+      <tr><td class="col-no">9</td><td class="col-label">MASA KERJA GOLONGAN</td><td class="col-value" colspan="3">: ${escapeHtml(row['Masa Kerja Gol'] || '-')}</td></tr>
+      <tr><td class="col-no">10</td><td class="col-label">UNIT KERJA</td><td class="col-value" colspan="3">: ${escapeHtml(row['Satuan Kerja'] || '-')}</td></tr>
+      <tr><td class="section-header" colspan="5">II. PENETAPAN ANGKA KREDIT</td></tr>
+      <tr class="ak-header-row">
+        <th class="col-no">NO</th><th class="col-label">UNSUR</th>
+        <th class="col-ak">LAMA</th><th class="col-ak">BARU</th><th class="col-ak">JUMLAH</th>
+      </tr>
+      <tr><td class="col-no">1</td><td class="col-label">AK dasar yang diberikan</td>
+        <td class="col-ak">0.00</td><td class="col-ak">0.00</td><td class="col-ak"><strong>0.00</strong></td></tr>
+      <tr><td class="col-no">2</td><td class="col-label">AK dari Pengalaman</td>
+        <td class="col-ak">${fmt(row.akLamaPendidikan)}</td><td class="col-ak">${fmt(row.akBaruPendidikan)}</td><td class="col-ak"><strong>${fmt((row.akLamaPendidikan || 0) + (row.akBaruPendidikan || 0))}</strong></td></tr>
+      <tr><td class="col-no">3</td><td class="col-label">AK dari Kegiatan Tugas Jabatan</td>
+        <td class="col-ak">${fmt(row.akLamaTugasPokok)}</td><td class="col-ak">${fmt(row.akBaruTugasPokok)}</td><td class="col-ak"><strong>${fmt((row.akLamaTugasPokok || 0) + (row.akBaruTugasPokok || 0))}</strong></td></tr>
+      <tr><td class="col-no">4</td><td class="col-label">AK dari Pengembangan Profesi</td>
+        <td class="col-ak">${fmt(row.akLamaPengembangan)}</td><td class="col-ak">${fmt(row.akBaruPengembangan)}</td><td class="col-ak"><strong>${fmt((row.akLamaPengembangan || 0) + (row.akBaruPengembangan || 0))}</strong></td></tr>
+      <tr><td class="col-no">5</td><td class="col-label">AK dari Kegiatan Penunjang</td>
+        <td class="col-ak">${fmt(row.akLamaPenunjang)}</td><td class="col-ak">${fmt(row.akBaruPenunjang)}</td><td class="col-ak"><strong>${fmt((row.akLamaPenunjang || 0) + (row.akBaruPenunjang || 0))}</strong></td></tr>
+      <tr class="ak-total-row"><td colspan="2"><strong>TOTAL ANGKA KREDIT</strong></td>
+        <td class="col-ak"><strong>${fmt(totalLama)}</strong></td><td class="col-ak"><strong>${fmt(totalBaru)}</strong></td><td class="col-ak"><strong>${fmt(totalJumlah)}</strong></td></tr>
+      <tr><td class="section-header" colspan="5">III. KETERANGAN</td></tr>
+      <tr class="ak-header-row">
+        <th class="col-label" colspan="3">URAIAN</th>
+        <th class="col-ak" colspan="2">JUMLAH</th>
+      </tr>
+      <tr><td class="col-label" colspan="3">Angka Kredit minimal untuk kenaikan Pangkat</td><td class="col-ak" colspan="2">${fmt(row.akMinimalPangkat)}</td></tr>
+      <tr><td class="col-label" colspan="3">Angka Kredit minimal untuk kenaikan Jenjang Jabatan</td><td class="col-ak" colspan="2">${fmt(row.akMinimalJenjang)}</td></tr>
+      <tr><td class="col-label" colspan="3">Angka Kredit minimal Pengembangan Profesi</td><td class="col-ak" colspan="2">${fmt(row.akMinimalPengembangan)}</td></tr>
+      <tr><td class="col-label" colspan="3"><strong>Kekurangan/Kelebihan AK untuk kenaikan Pangkat</strong></td><td class="col-ak" colspan="2"><strong>${fmt(kekuranganPangkat)}</strong></td></tr>
+      <tr><td class="col-label" colspan="3"><strong>Kekurangan/Kelebihan AK untuk kenaikan Jenjang</strong></td><td class="col-ak" colspan="2"><strong>${fmt(kekuranganJenjang)}</strong></td></tr>
+      <tr><td class="col-label" colspan="3"><strong>Kekurangan/Kelebihan AK Pengembangan Profesi</strong></td><td class="col-ak" colspan="2"><strong>${fmt(kekuranganPengembangan)}</strong></td></tr>
+    </table>
+    ${row.rekomendasi ? `<div class="rekomendasi-box"><strong>REKOMENDASI:</strong><br>${escapeHtml(row.rekomendasi).replace(/\n/g, '<br>')}</div>` : ''}
+    <table class="ttd-table">
+      <tr><td class="ttd-cell">
+        <p>Ditetapkan di : ${escapeHtml(row.lokasiPenetapan || 'Tenggarong')}</p>
+        <p>Tanggal : ${escapeHtml(row.tanggalPenetapan || formatDate(new Date().toISOString()))}</p>
+        <p style="margin-top: 8px;">Pejabat Penilai Kinerja,</p>
+        <div class="ttd-space"></div>
+        <p><strong>${escapeHtml(row.namaPejabat || '(..............................)')}</strong></p>
+        <p>NIP. ${escapeHtml(row.nipPejabat || '..............................')}</p>
+      </td></tr>
+    </table>
+    <div class="doc-footer">
+      <p>Dokumen ini dihasilkan oleh Sistem PAKTI (Pengelolaan Angka Kredit Integrasi)</p>
+      <p>Pemerintah Kabupaten Kutai Kartanegara &copy; ${new Date().getFullYear()}</p>
     </div>
   `;
 }
 
-/**
- * Print PAK Integrasi
- */
+/* ============================================
+ * PRINT - cetak 4 dokumen jadi 1 PDF
+ * ============================================ */
 function printPAKIntegrasi() {
   const printArea = document.getElementById('pakPrintArea');
   if (!printArea) {
@@ -481,13 +477,11 @@ function printPAKIntegrasi() {
     return;
   }
 
-  // Clone PAK document ke body untuk print
   const printWrapper = document.createElement('div');
   printWrapper.id = 'pakPrintWrapper';
   printWrapper.className = 'pak-print-wrapper';
   printWrapper.innerHTML = printArea.innerHTML;
 
-  // Hapus wrapper lama jika ada
   const oldWrapper = document.getElementById('pakPrintWrapper');
   if (oldWrapper) oldWrapper.remove();
 
@@ -504,24 +498,7 @@ function printPAKIntegrasi() {
   }, 300);
 }
 
-/**
- * Reset form input PAK
- */
 function resetPAKForm() {
-  const inputs = [
-    'akLamaPendidikan', 'akBaruPendidikan',
-    'akLamaTugasPokok', 'akBaruTugasPokok',
-    'akLamaPengembangan', 'akBaruPengembangan',
-    'akLamaPenunjang', 'akBaruPenunjang',
-    'akMinimalPangkat', 'akMinimalJenjang', 'akMinimalPengembangan',
-    'pakPeriodePenilaian', 'pakTanggalPenetapan', 'pakLokasiPenetapan',
-    'pakNamaPejabat', 'pakNipPejabat', 'pakRekomendasi',
-  ];
-  inputs.forEach((id) => {
-    const el = document.getElementById(id);
-    if (el) el.value = '';
-  });
-
   const select = document.getElementById('pakSelectNIP');
   if (select) select.value = '';
 
@@ -540,9 +517,6 @@ function resetPAKForm() {
   toastInfo('Form direset');
 }
 
-/**
- * Printout seluruh data admin (print halaman)
- */
 function printoutAdminData() {
   document.body.classList.add('printing-admin');
   setTimeout(() => {

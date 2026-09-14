@@ -40,8 +40,9 @@ function navigateTo(page) {
     pakTerbit: 'Cek PAK Terbit',
     cekStatus: 'Cek Status Pengajuan',
     petunjuk: 'Petunjuk Penggunaan',
+    dataMaster: 'Data Master (Sheet DATA)',
     pembuatanPAK: 'Pembuatan PAK Integrasi',
-    admin: 'Admin Panel',
+    admin: 'Kelola Data Pengajuan',
   };
   const pageTitleEl = document.getElementById('pageTitle');
   if (pageTitleEl) pageTitleEl.textContent = titles[page] || 'Beranda';
@@ -71,6 +72,8 @@ function navigateTo(page) {
     if (resultDiv) resultDiv.innerHTML = '';
   } else if (page === 'admin') {
     loadAdminData();
+  } else if (page === 'dataMaster') {
+    if (typeof loadDataMaster === 'function') loadDataMaster();
   } else if (page === 'pembuatanPAK') {
     if (typeof loadPembuatanPAKData === 'function') loadPembuatanPAKData();
   } else if (page === 'petunjuk') {
