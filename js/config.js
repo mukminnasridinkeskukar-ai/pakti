@@ -20,6 +20,8 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const TABLE_PENGAJUAN = 'pengajuan_pak';
 const TABLE_ADMIN_USERS = 'admin_users';
 const TABLE_DATA_MASTER = 'data_master';
+const TABLE_DOKUMEN_PAK = 'dokumen_pak';
+const TABLE_DOKUMEN_VERSIONS = 'dokumen_pak_versions';
 const STORAGE_BUCKET = 'pakti-dokumen';
 
 // Konfigurasi pagination

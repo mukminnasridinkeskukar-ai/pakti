@@ -182,11 +182,76 @@ CREATE TRIGGER trigger_data_master_updated_at
     EXECUTE FUNCTION update_updated_at_column();
 
 -- ============================================
+-- TABLE: dokumen_pak (Editor Dokumen PAK)
+-- ============================================
+-- Menyimpan dokumen PAK yang sudah di-edit oleh admin
+-- Menggunakan rich text editor (TinyMCE) - format HTML
+CREATE TABLE IF NOT EXISTS dokumen_pak (
+    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    data_master_id      UUID REFERENCES data_master(id) ON DELETE CASCADE,
+    nip                 TEXT,
+    nama                TEXT,
+    judul               TEXT NOT NULL DEFAULT 'Penetapan Angka Kredit Integrasi',
+
+    -- Konten dokumen (HTML dari TinyMCE)
+    konten              TEXT,
+
+    -- Pengaturan halaman (JSON)
+    pengaturan_halaman  JSONB DEFAULT '{"size":"A4","orientation":"portrait","marginTop":15,"marginBottom":15,"marginLeft":18,"marginRight":18,"lineHeight":1.5,"paragraphSpacing":8}',
+
+    -- Header & Footer (HTML)
+    header_dokumen      TEXT,
+    footer_dokumen      TEXT,
+
+    -- Metadata editor
+    status              TEXT DEFAULT 'draft' CHECK (status IN ('draft', 'final', 'archived')),
+    versi               INTEGER DEFAULT 1,
+    last_edited_by      TEXT,
+    last_edited_at      TIMESTAMPTZ,
+
+    -- Timestamps
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_dokumen_pak_data_master_id ON dokumen_pak (data_master_id);
+CREATE INDEX IF NOT EXISTS idx_dokumen_pak_nip ON dokumen_pak (nip);
+CREATE INDEX IF NOT EXISTS idx_dokumen_pak_status ON dokumen_pak (status);
+
+DROP TRIGGER IF EXISTS trigger_dokumen_pak_updated_at ON dokumen_pak;
+CREATE TRIGGER trigger_dokumen_pak_updated_at
+    BEFORE UPDATE ON dokumen_pak
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+-- ============================================
+-- TABLE: dokumen_pak_versions (Version History)
+-- ============================================
+-- Menyimpan riwayat perubahan dokumen untuk restore
+CREATE TABLE IF NOT EXISTS dokumen_pak_versions (
+    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    dokumen_id          UUID REFERENCES dokumen_pak(id) ON DELETE CASCADE,
+    versi               INTEGER NOT NULL,
+    konten              TEXT,
+    pengaturan_halaman  JSONB,
+    header_dokumen      TEXT,
+    footer_dokumen      TEXT,
+    edited_by           TEXT,
+    edited_at           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    catatan_perubahan   TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_dokumen_pak_versions_dokumen_id ON dokumen_pak_versions (dokumen_id);
+CREATE INDEX IF NOT EXISTS idx_dokumen_pak_versions_versi ON dokumen_pak_versions (versi);
+
+-- ============================================
 -- ENABLE ROW LEVEL SECURITY (RLS)
 -- ============================================
 ALTER TABLE pengajuan_pak ENABLE ROW LEVEL SECURITY;
 ALTER TABLE admin_users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE data_master ENABLE ROW LEVEL SECURITY;
+ALTER TABLE dokumen_pak ENABLE ROW LEVEL SECURITY;
+ALTER TABLE dokumen_pak_versions ENABLE ROW LEVEL SECURITY;
 
 -- ============================================
 -- SELESAI

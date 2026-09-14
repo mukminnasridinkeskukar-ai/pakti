@@ -99,6 +99,64 @@ CREATE POLICY "Allow public delete data_master"
     USING (true);
 
 -- ============================================
+-- POLICIES: dokumen_pak (Editor Dokumen)
+-- ============================================
+DROP POLICY IF EXISTS "Allow public read dokumen_pak" ON dokumen_pak;
+DROP POLICY IF EXISTS "Allow public insert dokumen_pak" ON dokumen_pak;
+DROP POLICY IF EXISTS "Allow public update dokumen_pak" ON dokumen_pak;
+DROP POLICY IF EXISTS "Allow public delete dokumen_pak" ON dokumen_pak;
+
+CREATE POLICY "Allow public read dokumen_pak"
+    ON dokumen_pak
+    FOR SELECT
+    TO anon, authenticated
+    USING (true);
+
+CREATE POLICY "Allow public insert dokumen_pak"
+    ON dokumen_pak
+    FOR INSERT
+    TO anon, authenticated
+    WITH CHECK (true);
+
+CREATE POLICY "Allow public update dokumen_pak"
+    ON dokumen_pak
+    FOR UPDATE
+    TO anon, authenticated
+    USING (true)
+    WITH CHECK (true);
+
+CREATE POLICY "Allow public delete dokumen_pak"
+    ON dokumen_pak
+    FOR DELETE
+    TO anon, authenticated
+    USING (true);
+
+-- ============================================
+-- POLICIES: dokumen_pak_versions
+-- ============================================
+DROP POLICY IF EXISTS "Allow public read dokumen_pak_versions" ON dokumen_pak_versions;
+DROP POLICY IF EXISTS "Allow public insert dokumen_pak_versions" ON dokumen_pak_versions;
+DROP POLICY IF EXISTS "Allow public delete dokumen_pak_versions" ON dokumen_pak_versions;
+
+CREATE POLICY "Allow public read dokumen_pak_versions"
+    ON dokumen_pak_versions
+    FOR SELECT
+    TO anon, authenticated
+    USING (true);
+
+CREATE POLICY "Allow public insert dokumen_pak_versions"
+    ON dokumen_pak_versions
+    FOR INSERT
+    TO anon, authenticated
+    WITH CHECK (true);
+
+CREATE POLICY "Allow public delete dokumen_pak_versions"
+    ON dokumen_pak_versions
+    FOR DELETE
+    TO anon, authenticated
+    USING (true);
+
+-- ============================================
 -- STORAGE POLICIES
 -- ============================================
 -- Allow public upload & read dokumen

@@ -664,3 +664,215 @@ async function deleteDataMaster(id) {
   if (error) throw error;
   return true;
 }
+
+/* ============================================
+ * DOKUMEN PAK (Editor Dokumen)
+ * ============================================
+ * Tabel: dokumen_pak + dokumen_pak_versions
+ * Menyimpan dokumen PAK yang di-edit via TinyMCE
+ * ============================================ */
+
+/**
+ * Ambil dokumen PAK berdasarkan data_master_id (atau NIP)
+ */
+async function fetchDokumenByDataMaster(dataMasterId, nip) {
+  if (!isSupabaseReady()) {
+    throw new Error('Supabase belum dikonfigurasi');
+  }
+
+  let query = supabaseClient.from(TABLE_DOKUMEN_PAK).select('*');
+
+  if (dataMasterId) {
+    query = query.eq('data_master_id', dataMasterId);
+  } else if (nip) {
+    query = query.eq('nip', nip);
+  } else {
+    throw new Error('dataMasterId atau nip wajib diisi');
+  }
+
+  query = query.order('updated_at', { ascending: false }).limit(1);
+
+  const { data, error } = await query.maybeSingle();
+  if (error) throw error;
+  return data || null;
+}
+
+/**
+ * Simpan dokumen (insert atau update)
+ * Jika sudah ada → update + buat version snapshot
+ * Jika belum → insert baru
+ */
+async function saveDokumenPAK(dokumenData) {
+  if (!isSupabaseReady()) {
+    throw new Error('Supabase belum dikonfigurasi');
+  }
+
+  const user = getCurrentUser();
+  const row = {
+    data_master_id: dokumenData.dataMasterId || null,
+    nip: dokumenData.nip || null,
+    nama: dokumenData.nama || null,
+    judul: dokumenData.judul || 'Penetapan Angka Kredit Integrasi',
+    konten: dokumenData.konten || '',
+    pengaturan_halaman: dokumenData.pengaturanHalaman || {
+      size: 'A4',
+      orientation: 'portrait',
+      marginTop: 15,
+      marginBottom: 15,
+      marginLeft: 18,
+      marginRight: 18,
+      lineHeight: 1.5,
+      paragraphSpacing: 8,
+    },
+    header_dokumen: dokumenData.headerDokumen || null,
+    footer_dokumen: dokumenData.footerDokumen || null,
+    status: dokumenData.status || 'draft',
+    last_edited_by: user ? user.username : 'anonymous',
+    last_edited_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+
+  let result;
+  if (dokumenData.id) {
+    // === UPDATE ===
+    // Ambil versi saat ini dulu untuk snapshot
+    const { data: current } = await supabaseClient
+      .from(TABLE_DOKUMEN_PAK)
+      .select('versi, konten, pengaturan_halaman, header_dokumen, footer_dokumen')
+      .eq('id', dokumenData.id)
+      .maybeSingle();
+
+    if (current) {
+      // Simpan snapshot versi lama ke tabel versions
+      const newVersion = (current.versi || 1) + 1;
+      row.versi = newVersion;
+
+      await supabaseClient.from(TABLE_DOKUMEN_VERSIONS).insert({
+        dokumen_id: dokumenData.id,
+        versi: current.versi || 1,
+        konten: current.konten,
+        pengaturan_halaman: current.pengaturan_halaman,
+        header_dokumen: current.header_dokumen,
+        footer_dokumen: current.footer_dokumen,
+        edited_by: user ? user.username : 'anonymous',
+        catatan_perubahan: dokumenData.catatanPerubahan || 'Auto-save',
+      });
+    }
+
+    // Update dokumen
+    const { data, error } = await supabaseClient
+      .from(TABLE_DOKUMEN_PAK)
+      .update(row)
+      .eq('id', dokumenData.id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    result = data;
+  } else {
+    // === INSERT ===
+    row.versi = 1;
+    const { data, error } = await supabaseClient
+      .from(TABLE_DOKUMEN_PAK)
+      .insert(row)
+      .select()
+      .single();
+
+    if (error) throw error;
+    result = data;
+  }
+
+  return result;
+}
+
+/**
+ * Ambil daftar version history untuk dokumen
+ */
+async function fetchDokumenVersions(dokumenId) {
+  if (!isSupabaseReady()) {
+    throw new Error('Supabase belum dikonfigurasi');
+  }
+
+  const { data, error } = await supabaseClient
+    .from(TABLE_DOKUMEN_VERSIONS)
+    .select('*')
+    .eq('dokumen_id', dokumenId)
+    .order('versi', { ascending: false });
+
+  if (error) throw error;
+  return data || [];
+}
+
+/**
+ * Restore dokumen ke versi tertentu
+ */
+async function restoreDokumenVersion(dokumenId, versionId) {
+  if (!isSupabaseReady()) {
+    throw new Error('Supabase belum dikonfigurasi');
+  }
+
+  // Ambil versi yang ingin di-restore
+  const { data: version, error: vErr } = await supabaseClient
+    .from(TABLE_DOKUMEN_VERSIONS)
+    .select('*')
+    .eq('id', versionId)
+    .maybeSingle();
+
+  if (vErr) throw vErr;
+  if (!version) throw new Error('Versi tidak ditemukan');
+
+  // Ambil dokumen saat ini untuk snapshot
+  const { data: current } = await supabaseClient
+    .from(TABLE_DOKUMEN_PAK)
+    .select('versi, konten, pengaturan_halaman, header_dokumen, footer_dokumen')
+    .eq('id', dokumenId)
+    .maybeSingle();
+
+  if (current) {
+    // Snapshot kondisi saat ini sebelum restore
+    await supabaseClient.from(TABLE_DOKUMEN_VERSIONS).insert({
+      dokumen_id: dokumenId,
+      versi: current.versi || 1,
+      konten: current.konten,
+      pengaturan_halaman: current.pengaturan_halaman,
+      header_dokumen: current.header_dokumen,
+      footer_dokumen: current.footer_dokumen,
+      edited_by: getCurrentUser() ? getCurrentUser().username : 'anonymous',
+      catatan_perubahan: 'Snapshot sebelum restore ke versi ' + version.versi,
+    });
+  }
+
+  // Update dokumen dengan konten versi lama
+  const newVersionNum = (current?.versi || 1) + 1;
+  const { data, error } = await supabaseClient
+    .from(TABLE_DOKUMEN_PAK)
+    .update({
+      konten: version.konten,
+      pengaturan_halaman: version.pengaturan_halaman,
+      header_dokumen: version.header_dokumen,
+      footer_dokumen: version.footer_dokumen,
+      versi: newVersionNum,
+      last_edited_by: getCurrentUser() ? getCurrentUser().username : 'anonymous',
+      last_edited_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', dokumenId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Hapus dokumen
+ */
+async function deleteDokumenPAK(id) {
+  if (!isSupabaseReady()) {
+    throw new Error('Supabase belum dikonfigurasi');
+  }
+
+  const { error } = await supabaseClient.from(TABLE_DOKUMEN_PAK).delete().eq('id', id);
+  if (error) throw error;
+  return true;
+}

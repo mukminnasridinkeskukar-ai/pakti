@@ -21,6 +21,9 @@
   <!-- Supabase JS SDK via CDN -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 
+  <!-- TinyMCE Rich Text Editor (production-ready) -->
+  <script src="https://cdn.jsdelivr.net/npm/tinymce@7.3.0/tinymce.min.js"></script>
+
   <!-- ============================================
        PAKTI STYLESHEETS (modular)
        ============================================ -->
@@ -36,6 +39,7 @@
   <link rel="stylesheet" href="css/petunjuk.css">
   <link rel="stylesheet" href="css/responsive.css">
   <link rel="stylesheet" href="css/print-pak.css">
+  <link rel="stylesheet" href="css/editor.css">
 </head>
 <body>
   <!-- ============================================
@@ -1234,10 +1238,13 @@
               <button class="btn btn-info" id="pakPreviewBtn" onclick="openPrintPreview()" style="display: none; background: #06b6d4; color: white;">
                 <i class="fas fa-eye"></i> Print Preview (1/4 → 4/4)
               </button>
+              <button class="btn btn-warning" id="pakEditBtn" onclick="openDocumentEditor(currentPAKData)" style="display: none; background: #f59e0b; color: white;">
+                <i class="fas fa-edit"></i> Edit Dokumen (Word-like)
+              </button>
               <button class="btn btn-success" id="pakPrintBtn" onclick="printPAKIntegrasi()" style="display: none;">
                 <i class="fas fa-print"></i> Print / Save as PDF (4 Halaman)
               </button>
-              <button class="btn btn-warning" onclick="resetPAKForm()">
+              <button class="btn btn-secondary" onclick="resetPAKForm()" style="background: #64748b; color: white;">
                 <i class="fas fa-redo"></i> Reset
               </button>
             </div>
@@ -1686,10 +1693,13 @@
   <!-- 19. Data Master management (Sheet DATA) -->
   <script src="js/data-master.js"></script>
 
-  <!-- 20. Main app init -->
+  <!-- 20. Document Editor (TinyMCE-based, Word-like) -->
+  <script src="js/dokumen-editor.js"></script>
+
+  <!-- 21. Main app init -->
   <script src="js/app.js"></script>
 
-  <!-- 21. Splash screen (runs last, triggers initApp on completion) -->
+  <!-- 22. Splash screen (runs last, triggers initApp on completion) -->
   <script src="js/splash.js"></script>
 </body>
 </html>

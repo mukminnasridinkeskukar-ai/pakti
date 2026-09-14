@@ -172,10 +172,13 @@ function generatePAKIntegrasi() {
   const previewBtn = document.getElementById('pakPreviewBtn');
   if (previewBtn) previewBtn.style.display = 'inline-flex';
 
+  const editBtn = document.getElementById('pakEditBtn');
+  if (editBtn) editBtn.style.display = 'inline-flex';
+
   // Auto-fit setiap halaman agar konten muat
   setTimeout(() => {
     autoFitAllPages();
-    toastSuccess('4 dokumen PAK berhasil di-generate. Klik Print Preview untuk lihat hasil, lalu Print untuk cetak/PDF.');
+    toastSuccess('4 dokumen PAK berhasil di-generate. Klik "Edit Dokumen" untuk mengedit langsung.');
   }, 100);
 
   if (preview) {
@@ -791,6 +794,9 @@ function resetPAKForm() {
 
   const previewBtn = document.getElementById('pakPreviewBtn');
   if (previewBtn) previewBtn.style.display = 'none';
+
+  const editBtn = document.getElementById('pakEditBtn');
+  if (editBtn) editBtn.style.display = 'none';
 
   currentPAKData = null;
   toastInfo('Form direset');

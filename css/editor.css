@@ -1,0 +1,536 @@
+/* ============================================
+   PAKTI - Document Editor (Word-like)
+   ============================================
+   Layout: toolbar atas + halaman A4 di tengah
+   Pakai TinyMCE sebagai engine editor
+   ============================================ */
+
+/* ============================================
+   EDITOR MODAL - Fullscreen overlay
+   ============================================ */
+.editor-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: #1e293b;
+  z-index: 99999;
+  display: none;
+  flex-direction: column;
+}
+
+.editor-modal.active {
+  display: flex;
+}
+
+/* ============================================
+   HEADER - Status bar atas
+   ============================================ */
+.editor-header {
+  background: #0f172a;
+  color: #fff;
+  padding: 8px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #334155;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.editor-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.9rem;
+}
+
+.editor-title i {
+  color: var(--primary-blue);
+  font-size: 1.1rem;
+}
+
+.editor-title-text {
+  font-weight: 600;
+}
+
+.editor-title-meta {
+  font-size: 0.78rem;
+  color: #94a3b8;
+  margin-left: 8px;
+}
+
+.editor-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.8rem;
+}
+
+.editor-save-status {
+  padding: 4px 10px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #cbd5e1;
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.editor-save-status.saving {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+}
+
+.editor-save-status.saved {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+}
+
+.editor-save-status.error {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+}
+
+.editor-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.editor-btn {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.editor-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.editor-btn.btn-primary {
+  background: var(--primary-blue);
+}
+
+.editor-btn.btn-primary:hover {
+  background: var(--primary-dark);
+}
+
+.editor-btn.btn-success {
+  background: var(--success);
+}
+
+.editor-btn.btn-success:hover {
+  background: #059669;
+}
+
+.editor-btn.btn-danger {
+  background: var(--danger);
+}
+
+.editor-btn.btn-danger:hover {
+  background: #dc2626;
+}
+
+/* ============================================
+   TOOLBAR - Atas editor (TinyMCE akan render)
+   ============================================ */
+.editor-toolbar-container {
+  background: #fff;
+  border-bottom: 1px solid #e2e8f0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+/* Styling TinyMCE toolbar supaya terlihat modern */
+.editor-toolbar-container .tox-tinymce {
+  border: none !important;
+}
+
+.editor-toolbar-container .tox-toolbar__primary {
+  background: #f8fafc !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+.editor-toolbar-container .tox-tbtn {
+  color: #475569 !important;
+}
+
+.editor-toolbar-container .tox-tbtn:hover {
+  background: #e0e7ff !important;
+  color: var(--primary-blue) !important;
+}
+
+.editor-toolbar-container .tox-tbtn--enabled,
+.editor-toolbar-container .tox-tbtn--enabled:hover {
+  background: #dbeafe !important;
+  color: var(--primary-blue) !important;
+}
+
+/* ============================================
+   EDITOR BODY - Halaman A4
+   ============================================ */
+.editor-body {
+  flex: 1;
+  overflow: auto;
+  background: #475569;
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+/* Container untuk halaman A4 */
+.editor-page-container {
+  background: #fff;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  margin: 0 auto;
+  transition: all 0.3s ease;
+}
+
+/* Halaman A4 (default portrait) */
+.editor-page-container.a4-portrait {
+  width: 210mm;
+  min-height: 297mm;
+}
+
+.editor-page-container.a4-landscape {
+  width: 297mm;
+  min-height: 210mm;
+}
+
+/* Editor area di dalam halaman A4 */
+.editor-page-container .tox-tinymce {
+  border: none !important;
+}
+
+.editor-page-container .tox-edit-area {
+  padding: 0 !important;
+  background: #fff !important;
+}
+
+.editor-page-container .tox-edit-area__iframe {
+  background: #fff !important;
+  width: 100% !important;
+}
+
+/* Margin halaman A4 - diatur via JS */
+.editor-page-container.a4-portrait.has-margins .tox-edit-area__iframe {
+  padding: 15mm 18mm !important;
+  box-sizing: border-box !important;
+}
+
+/* ============================================
+   FOOTER - Status bar bawah
+   ============================================ */
+.editor-footer {
+  background: #0f172a;
+  color: #cbd5e1;
+  padding: 6px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.75rem;
+  border-top: 1px solid #334155;
+}
+
+.editor-footer-info {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.editor-footer-info span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.editor-page-count {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px 10px;
+  border-radius: 10px;
+  color: #fff;
+}
+
+/* ============================================
+   PENGATURAN HALAMAN - Side panel
+   ============================================ */
+.editor-settings-panel {
+  position: fixed;
+  right: 0;
+  top: 0;
+  width: 320px;
+  height: 100vh;
+  background: #fff;
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.2);
+  z-index: 100;
+  transform: translateX(100%);
+  transition: transform 0.3s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.editor-settings-panel.active {
+  transform: translateX(0);
+}
+
+.editor-settings-header {
+  background: var(--primary-blue);
+  color: #fff;
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.editor-settings-header h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.editor-settings-close {
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.editor-settings-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.editor-settings-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.editor-settings-section {
+  margin-bottom: 24px;
+}
+
+.editor-settings-section h4 {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-dark);
+  margin: 0 0 12px 0;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.editor-settings-section .form-group {
+  margin-bottom: 12px;
+}
+
+.editor-settings-section label {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--text-medium);
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.editor-settings-section select,
+.editor-settings-section input {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-size: 0.82rem;
+}
+
+.editor-settings-section .form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+/* ============================================
+   VERSION HISTORY PANEL
+   ============================================ */
+.editor-versions-list {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.editor-version-item {
+  padding: 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.editor-version-item:hover {
+  border-color: var(--primary-blue);
+  background: var(--primary-light);
+}
+
+.editor-version-item.current {
+  background: #d1fae5;
+  border-color: var(--success);
+}
+
+.editor-version-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.editor-version-num {
+  font-weight: 600;
+  color: var(--primary-blue);
+  font-size: 0.85rem;
+}
+
+.editor-version-date {
+  font-size: 0.72rem;
+  color: var(--text-light);
+}
+
+.editor-version-meta {
+  font-size: 0.75rem;
+  color: var(--text-medium);
+}
+
+.editor-version-actions {
+  margin-top: 6px;
+  display: flex;
+  gap: 4px;
+}
+
+.editor-version-actions button {
+  padding: 3px 8px;
+  font-size: 0.72rem;
+  border: 1px solid var(--border-color);
+  background: #fff;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.editor-version-actions button:hover {
+  background: var(--primary-light);
+}
+
+.editor-version-actions button.btn-restore {
+  background: var(--success);
+  color: #fff;
+  border-color: var(--success);
+}
+
+.editor-version-actions button.btn-restore:hover {
+  background: #059669;
+}
+
+/* ============================================
+   LOADING STATE
+   ============================================ */
+.editor-loading {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  color: #fff;
+  z-index: 1000;
+}
+
+.editor-loading .spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid rgba(255, 255, 255, 0.2);
+  border-top-color: var(--primary-blue);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 16px;
+}
+
+.editor-loading p {
+  font-size: 0.9rem;
+  color: #cbd5e1;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media (max-width: 1024px) {
+  .editor-settings-panel {
+    width: 280px;
+  }
+}
+
+@media (max-width: 768px) {
+  .editor-header {
+    padding: 6px 10px;
+  }
+
+  .editor-title-text {
+    font-size: 0.85rem;
+  }
+
+  .editor-title-meta {
+    display: none;
+  }
+
+  .editor-btn {
+    padding: 5px 8px;
+    font-size: 0.75rem;
+  }
+
+  .editor-btn span {
+    display: none;
+  }
+
+  .editor-body {
+    padding: 10px;
+  }
+
+  .editor-page-container.a4-portrait {
+    width: 100%;
+    min-height: auto;
+  }
+
+  .editor-page-container.a4-landscape {
+    width: 100%;
+    min-height: auto;
+  }
+
+  .editor-settings-panel {
+    width: 100%;
+  }
+
+  .editor-footer {
+    font-size: 0.7rem;
+    padding: 4px 10px;
+  }
+
+  .editor-footer-info {
+    gap: 8px;
+  }
+}
