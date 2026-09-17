@@ -238,6 +238,10 @@ async function initTinyMCEEditor() {
     selector: '#tinyMCEEditor',
     license_key: 'gpl',
 
+    // Base URL untuk load plugins & skins dari CDN
+    base_url: 'https://cdn.jsdelivr.net/npm/tinymce@6.8.4',
+    suffix: '.min',
+
     height: '100%',
     width: '100%',
     min_height: 500,

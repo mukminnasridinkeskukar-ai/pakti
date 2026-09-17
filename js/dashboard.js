@@ -145,12 +145,11 @@ function showStatCardPopup(type) {
   modal.className = 'modal-overlay active';
   modal.style.cssText = 'display: flex;';
 
-  // Data minimal yang ditampilkan (TIDAK ada email, no HP, dokumen URL)
+  // Data minimal yang ditampilkan (TIDAK ada NIP, email, no HP, dokumen URL)
   const tableRows = filteredData.slice(0, 50).map((row, idx) => {
     const statusBadge = getStatusBadge(row['Status']);
     const nomorReg = row['NomorRegister'] || '-';
     const nama = row['Nama Lengkap dengan Gelar'] || '-';
-    const nip = row['NIP'] || '-';
     const satker = row['Satuan Kerja'] || '-';
     const jenisJF = row['Jenis JF'] || '-';
     const tanggal = formatDate(row['Timestamp']);
@@ -160,7 +159,6 @@ function showStatCardPopup(type) {
         <td style="padding: 8px; text-align: center;">${idx + 1}</td>
         <td style="padding: 8px; font-family: monospace; font-size: 0.78rem;">${escapeHtml(nomorReg)}</td>
         <td style="padding: 8px;"><strong>${escapeHtml(nama)}</strong></td>
-        <td style="padding: 8px; font-family: monospace; font-size: 0.78rem;">${escapeHtml(nip)}</td>
         <td style="padding: 8px;">${escapeHtml(satker)}</td>
         <td style="padding: 8px;">${escapeHtml(jenisJF)}</td>
         <td style="padding: 8px;">${statusBadge}</td>
@@ -195,7 +193,6 @@ function showStatCardPopup(type) {
                   <th style="padding: 10px; text-align: center; border-bottom: 2px solid var(--border-color); font-size: 0.75rem; text-transform: uppercase;">No</th>
                   <th style="padding: 10px; text-align: left; border-bottom: 2px solid var(--border-color); font-size: 0.75rem; text-transform: uppercase;">No. Register</th>
                   <th style="padding: 10px; text-align: left; border-bottom: 2px solid var(--border-color); font-size: 0.75rem; text-transform: uppercase;">Nama</th>
-                  <th style="padding: 10px; text-align: left; border-bottom: 2px solid var(--border-color); font-size: 0.75rem; text-transform: uppercase;">NIP</th>
                   <th style="padding: 10px; text-align: left; border-bottom: 2px solid var(--border-color); font-size: 0.75rem; text-transform: uppercase;">Satuan Kerja</th>
                   <th style="padding: 10px; text-align: left; border-bottom: 2px solid var(--border-color); font-size: 0.75rem; text-transform: uppercase;">Jenis JF</th>
                   <th style="padding: 10px; text-align: center; border-bottom: 2px solid var(--border-color); font-size: 0.75rem; text-transform: uppercase;">Status</th>

@@ -1,73 +1,88 @@
 /* ============================================
- * PAKTI - Petunjuk Penggunaan Logic
+ * PAKTI - Petunjuk Penggunaan (Buku Read-Only)
+ * ============================================
+ * Format buku dengan navigasi halaman
+ * Anti-download, anti-copy, anti-print
  * ============================================ */
 
-/**
- * Toggle card expand/collapse
- */
-function toggleCard(button) {
-  const card = button.closest('.petunjuk-card');
-  if (!card) return;
+let bookCurrentPage = 1;
+let bookTotalPages = 7;
 
-  const isExpanded = card.classList.contains('expanded');
+function initPetunjukBook() {
+  const pages = document.querySelectorAll('.book-page-content');
+  bookTotalPages = pages.length;
+  bookCurrentPage = 1;
+  showBookPage(1);
+  generateBookDots();
 
-  if (isExpanded) {
-    card.classList.remove('expanded');
-    const spanEl = button.querySelector('span');
-    if (spanEl) spanEl.textContent = 'Lihat Detail';
-  } else {
-    card.classList.add('expanded');
-    const spanEl = button.querySelector('span');
-    if (spanEl) spanEl.textContent = 'Tutup Detail';
+  // Keyboard navigation
+  document.addEventListener('keydown', function (e) {
+    const petunjukActive = document.getElementById('petunjukPage');
+    if (!petunjukActive || !petunjukActive.classList.contains('active')) return;
 
-    // Scroll to show full content
-    setTimeout(() => {
-      card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }, 300);
-  }
+    if (e.key === 'ArrowLeft') bookPrevPage();
+    else if (e.key === 'ArrowRight') bookNextPage();
+  });
 }
 
-/**
- * Show help modal/action
- */
-function showHelpModal(type) {
-  switch (type) {
-    case 'faq':
-      toastInfo('FAQ akan segera tersedia');
-      break;
-    case 'video':
-      toastInfo('Video Tutorial akan segera tersedia');
-      break;
-    case 'download':
-      toastInfo('Panduan PDF sedang disiapkan');
-      break;
-    default:
-      toastInfo('Fitur dalam pengembangan');
-  }
-}
-
-/**
- * Initialize petunjuk page animations
- */
-function initPetunjukPage() {
-  const cards = document.querySelectorAll('.petunjuk-card');
-  cards.forEach((card, index) => {
-    card.style.opacity = '0';
-    card.style.transform = 'translateY(30px)';
-
-    setTimeout(() => {
-      card.style.transition = 'all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
-      card.style.opacity = '1';
-      card.style.transform = 'translateY(0)';
-    }, 150 * index);
+function showBookPage(pageNum) {
+  const pages = document.querySelectorAll('.book-page-content');
+  pages.forEach((page, idx) => {
+    page.classList.toggle('active', idx + 1 === pageNum);
   });
 
-  // Auto-expand first card on mobile for better UX
-  if (window.innerWidth <= 768) {
-    const firstCard = document.querySelector('.petunjuk-card');
-    if (firstCard && !firstCard.classList.contains('expanded')) {
-      const btn = firstCard.querySelector('.btn-card-action');
-      if (btn) toggleCard(btn);
-    }
+  // Update indicator
+  const indicator = document.getElementById('bookPageIndicator');
+  if (indicator) indicator.textContent = pageNum + ' / ' + bookTotalPages;
+
+  // Update nav buttons
+  const prevBtn = document.getElementById('bookPrevBtn');
+  const nextBtn = document.getElementById('bookNextBtn');
+  if (prevBtn) prevBtn.disabled = pageNum === 1;
+  if (nextBtn) nextBtn.disabled = pageNum === bookTotalPages;
+
+  // Update dots
+  document.querySelectorAll('.book-page-dot').forEach((dot, idx) => {
+    dot.classList.toggle('active', idx + 1 === pageNum);
+  });
+
+  // Scroll to top of book
+  const bookPages = document.querySelector('.book-pages');
+  if (bookPages) bookPages.scrollTop = 0;
+
+  bookCurrentPage = pageNum;
+}
+
+function bookNextPage() {
+  if (bookCurrentPage < bookTotalPages) {
+    showBookPage(bookCurrentPage + 1);
   }
 }
+
+function bookPrevPage() {
+  if (bookCurrentPage > 1) {
+    showBookPage(bookCurrentPage - 1);
+  }
+}
+
+function generateBookDots() {
+  const footer = document.getElementById('bookFooter');
+  if (!footer) return;
+  footer.innerHTML = '';
+
+  for (let i = 1; i <= bookTotalPages; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'book-page-dot' + (i === 1 ? ' active' : '');
+    dot.onclick = () => showBookPage(i);
+    footer.appendChild(dot);
+  }
+}
+
+// Override fungsi lama
+function initPetunjukPage() {
+  initPetunjukBook();
+}
+
+function toggleCard() { /* deprecated, pakai book */ }
+function showHelpModal() { /* deprecated */ }
+function checkMobilePetunjuk() { /* deprecated */ }

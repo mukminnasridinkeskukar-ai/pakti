@@ -21,8 +21,8 @@
   <!-- Supabase JS SDK via CDN -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 
-  <!-- TinyMCE Rich Text Editor (production-ready) -->
-  <script src="https://cdn.jsdelivr.net/npm/tinymce@7.3.0/tinymce.min.js"></script>
+  <!-- TinyMCE Rich Text Editor (v6 stabil untuk community use) -->
+  <script src="https://cdn.jsdelivr.net/npm/tinymce@6.8.4/tinymce.min.js"></script>
 
   <!-- html-docx-js untuk export DOCX yang real -->
   <script src="https://cdn.jsdelivr.net/npm/html-docx-js@0.3.1/dist/html-docx.js"></script>
@@ -43,6 +43,7 @@
   <link rel="stylesheet" href="css/responsive.css">
   <link rel="stylesheet" href="css/print-pak.css">
   <link rel="stylesheet" href="css/editor.css">
+  <link rel="stylesheet" href="css/book.css">
 </head>
 <body>
   <!-- ============================================
@@ -800,25 +801,32 @@
              PETUNJUK PENGGUNAAN
              ============================================ -->
         <section class="page-section" id="petunjukPage">
-          <div class="petunjuk-header">
-            <div class="petunjuk-header-content">
-              <div class="petunjuk-header-icon"><i class="fas fa-book-open"></i></div>
-              <div class="petunjuk-header-text">
-                <h1>Petunjuk Penggunaan</h1>
-                <p>Panduan lengkap penggunaan Sistem PAKTI (Pengelolaan Angka Kredit Integrasi)</p>
-              </div>
-            </div>
-          </div>
+          <div class="petunjuk-book-container">
+            <div class="book-viewer" oncontextmenu="return false" oncopy="return false" oncut="return false" onselectstart="return false">
 
-          <div class="petunjuk-cards-grid">
-            <!-- Card 1: Dasar Hukum -->
-            <div class="petunjuk-card card-dasar-hukum">
-              <div class="card-glow"></div>
-              <div class="card-content">
-                <div class="card-icon-wrapper icon-blue"><i class="fas fa-scale-balanced"></i></div>
-                <h3 class="card-title">Dasar Hukum</h3>
-                <p class="card-subtitle">Landasan hukum sistem PAKTI</p>
-                <div class="card-body">
+              <!-- Book Toolbar -->
+              <div class="book-toolbar">
+                <div class="book-toolbar-title">
+                  <i class="fas fa-book-open"></i> Petunjuk Penggunaan PAKTI
+                </div>
+                <div class="book-nav-controls">
+                  <button class="book-nav-btn" id="bookPrevBtn" onclick="bookPrevPage()" title="Halaman sebelumnya">
+                    <i class="fas fa-chevron-left"></i>
+                  </button>
+                  <span class="book-page-indicator" id="bookPageIndicator">1 / 7</span>
+                  <button class="book-nav-btn" id="bookNextBtn" onclick="bookNextPage()" title="Halaman berikutnya">
+                    <i class="fas fa-chevron-right"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Book Pages -->
+              <div class="book-pages">
+
+                <!-- Page 1: Cover / Dasar Hukum -->
+                <div class="book-page-content active" data-page="1">
+                  <h1><i class="fas fa-scale-balanced"></i> Dasar Hukum</h1>
+                  <p class="info-box"><i class="fas fa-info-circle"></i> Landasan hukum sistem PAKTI (Pengelolaan Angka Kredit Integrasi) PNS Kabupaten Kutai Kartanegara.</p>
                   <ul class="regulation-list">
                     <li>
                       <i class="fas fa-file-contract"></i>
@@ -857,71 +865,47 @@
                     </li>
                   </ul>
                 </div>
-                <div class="card-footer">
-                  <button class="btn-card-action" onclick="toggleCard(this)">
-                    <span>Lihat Detail</span>
-                    <i class="fas fa-chevron-down"></i>
-                  </button>
-                </div>
-              </div>
-            </div>
 
-            <!-- Card 2: SOP -->
-            <div class="petunjuk-card card-sop">
-              <div class="card-glow"></div>
-              <div class="card-content">
-                <div class="card-icon-wrapper icon-green"><i class="fas fa-clipboard-list-check"></i></div>
-                <h3 class="card-title">SOP (Standar Operasional Prosedur)</h3>
-                <p class="card-subtitle">Tahapan proses pengajuan PAK</p>
-                <div class="card-body">
+                <!-- Page 2: SOP -->
+                <div class="book-page-content" data-page="2">
+                  <h1><i class="fas fa-clipboard-list-check"></i> Standar Operasional Prosedur</h1>
+                  <p class="info-box"><i class="fas fa-info-circle"></i> Tahapan proses pengajuan PAK dari awal hingga terbit.</p>
                   <div class="sop-timeline">
                     <div class="sop-step">
                       <div class="step-number">1</div>
                       <div class="step-content">
                         <h4>Pengajuan Awal</h4>
-                        <p>Pengisi mengisi formulir dan mengupload dokumen pendukung melalui sistem</p>
+                        <p>Pengisi mengisi formulir dan mengupload dokumen pendukung melalui sistem PAKTI</p>
                       </div>
                     </div>
                     <div class="sop-step">
                       <div class="step-number">2</div>
                       <div class="step-content">
                         <h4>Verifikasi Admin</h4>
-                        <p>Admin memverifikasi kelengkapan dan kesesuaian dokumen</p>
+                        <p>Admin memverifikasi kelengkapan dan kesesuaian dokumen yang diupload</p>
                       </div>
                     </div>
                     <div class="sop-step">
                       <div class="step-number">3</div>
                       <div class="step-content">
                         <h4>Penilaian Angka Kredit</h4>
-                        <p>Tim penilai menentukan angka kredit berdasarkan kriteria</p>
+                        <p>Tim penilai menentukan angka kredit berdasarkan kriteria yang berlaku</p>
                       </div>
                     </div>
                     <div class="sop-step">
                       <div class="step-number">4</div>
                       <div class="step-content">
-                        <h4>Penetapan/Penerbitan</h4>
-                        <p>SK PAK diterbitkan dan dapat diunduh oleh pengguna</p>
+                        <h4>Penetapan / Penerbitan</h4>
+                        <p>SK PAK diterbitkan dan dapat diunduh oleh pengguna melalui sistem</p>
                       </div>
                     </div>
                   </div>
                 </div>
-                <div class="card-footer">
-                  <button class="btn-card-action" onclick="toggleCard(this)">
-                    <span>Lihat Detail</span>
-                    <i class="fas fa-chevron-down"></i>
-                  </button>
-                </div>
-              </div>
-            </div>
 
-            <!-- Card 3: Alur Pelayanan -->
-            <div class="petunjuk-card card-alur">
-              <div class="card-glow"></div>
-              <div class="card-content">
-                <div class="card-icon-wrapper icon-purple"><i class="fas fa-diagram-project"></i></div>
-                <h3 class="card-title">Alur Pelayanan</h3>
-                <p class="card-subtitle">Flow proses dari awal hingga selesai</p>
-                <div class="card-body">
+                <!-- Page 3: Alur Pelayanan -->
+                <div class="book-page-content" data-page="3">
+                  <h1><i class="fas fa-diagram-project"></i> Alur Pelayanan</h1>
+                  <p class="info-box"><i class="fas fa-info-circle"></i> Flow proses dari awal hingga selesai.</p>
                   <div class="flowchart-container">
                     <div class="flow-start"><i class="fas fa-user-plus"></i><span>Mulai Pengajuan</span></div>
                     <div class="flow-arrow"><i class="fas fa-arrow-right"></i></div>
@@ -929,14 +913,11 @@
                     <div class="flow-arrow"><i class="fas fa-arrow-right"></i></div>
                     <div class="flow-process"><i class="fas fa-upload"></i><span>Upload Dokumen</span></div>
                     <div class="flow-arrow"><i class="fas fa-arrow-right"></i></div>
-                    <div class="flow-decision"><i class="fas fa-search"></i><span>Verifikasi</span></div>
-                    <div class="flow-split">
-                      <div class="flow-branch branch-revisi"><i class="fas fa-undo"></i><span>Revisi</span></div>
-                      <div class="flow-branch branch-setuju"><i class="fas fa-check"></i><span>Disetujui</span></div>
-                    </div>
+                    <div class="flow-process"><i class="fas fa-search"></i><span>Verifikasi</span></div>
                     <div class="flow-arrow"><i class="fas fa-arrow-right"></i></div>
-                    <div class="flow-end"><i class="fas fa-stamp"></i><span>PAK Terbit</span></div>
+                    <div class="flow-start"><i class="fas fa-stamp"></i><span>PAK Terbit</span></div>
                   </div>
+                  <h2>Status Pengajuan</h2>
                   <div class="status-legend">
                     <div class="legend-item"><span class="legend-dot dot-pending"></span><span>Menunggu Verifikasi</span></div>
                     <div class="legend-item"><span class="legend-dot dot-perbaikan"></span><span>Perlu Perbaikan</span></div>
@@ -944,41 +925,23 @@
                     <div class="legend-item"><span class="legend-dot dot-terbit"></span><span>Diterbitkan</span></div>
                   </div>
                 </div>
-                <div class="card-footer">
-                  <button class="btn-card-action" onclick="toggleCard(this)">
-                    <span>Lihat Detail</span>
-                    <i class="fas fa-chevron-down"></i>
-                  </button>
-                </div>
-              </div>
-            </div>
 
-            <!-- Card 4: Kontak PIC -->
-            <div class="petunjuk-card card-kontak">
-              <div class="card-glow"></div>
-              <div class="card-content">
-                <div class="card-icon-wrapper icon-orange"><i class="fas fa-headset"></i></div>
-                <h3 class="card-title">Kontak PIC</h3>
-                <p class="card-subtitle">Person in Charge untuk bantuan teknis</p>
-                <div class="card-body">
+                <!-- Page 4: Kontak PIC -->
+                <div class="book-page-content" data-page="4">
+                  <h1><i class="fas fa-headset"></i> Kontak Penanggung Jawab</h1>
+                  <p class="info-box"><i class="fas fa-info-circle"></i> Hubungi petugas untuk bantuan teknis.</p>
                   <div class="pic-grid">
                     <div class="pic-card">
                       <div class="pic-avatar"><i class="fas fa-user-tie"></i></div>
-                      <h4>Koordinator PAK Integrasi</h4>
+                      <h4>Koordinator PAK</h4>
                       <p class="pic-name">Tarbiatul Adabiyah, SH., MH</p>
-                      <div class="pic-contact">
-                        <a href="tel:+628125810442" class="pic-link"><i class="fas fa-phone"></i> 0812-5810-442</a>
-                        <a href="mailto:sdmkdinkeskukar2024@gmail.com" class="pic-link"><i class="fas fa-envelope"></i> Email</a>
-                      </div>
+                      <a href="tel:+628125810442" class="pic-link"><i class="fas fa-phone"></i> 0812-5810-442</a>
                     </div>
                     <div class="pic-card">
                       <div class="pic-avatar"><i class="fas fa-laptop-code"></i></div>
                       <h4>Admin Sistem</h4>
                       <p class="pic-name">Tim IT Dinas Kesehatan</p>
-                      <div class="pic-contact">
-                        <a href="tel:+6282130275800" class="pic-link"><i class="fas fa-phone"></i> 0821-3027-5800</a>
-                        <a href="mailto:sdmkdinkeskukar2024@gmail.com" class="pic-link"><i class="fas fa-envelope"></i> Email</a>
-                      </div>
+                      <a href="tel:+6282130275800" class="pic-link"><i class="fas fa-phone"></i> 0821-3027-5800</a>
                     </div>
                     <div class="pic-card pic-full">
                       <div class="pic-info-box">
@@ -993,118 +956,73 @@
                       <div class="pic-info-box info-hours">
                         <i class="fas fa-clock"></i>
                         <div>
-                          <strong>Jam Operasional Layanan</strong>
+                          <strong>Jam Operasional</strong>
                           <p>Senin - Jumat: 08.00 - 16.30 WITA<br>Sabtu/Minggu/Libur: Tutup</p>
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
-                <div class="card-footer">
-                  <button class="btn-card-action" onclick="toggleCard(this)">
-                    <span>Lihat Detail</span>
-                    <i class="fas fa-chevron-down"></i>
-                  </button>
+
+                <!-- Page 5: Cara Menggunakan -->
+                <div class="book-page-content" data-page="5">
+                  <h1><i class="fas fa-book-reader"></i> Cara Menggunakan PAKTI</h1>
+                  <h2>1. Dashboard Data</h2>
+                  <p>Halaman utama menampilkan statistik pengajuan dalam bentuk kartu dan grafik. Klik kartu untuk melihat detail data pengajuan per status.</p>
+                  <h2>2. Formulir Pengajuan</h2>
+                  <p>Isi formulir dengan data lengkap. Upload 4 dokumen wajib: Foto 4x6, SK Pangkat, SK Jabfung, dan PAK Konvensional. Setelah submit, nomor register akan terbit otomatis dan dapat diunduh.</p>
+                  <h2>3. Pemantauan Proses</h2>
+                  <p>Pantau status pengajuan Anda. Admin dapat melihat detail dan mengubah status pengajuan.</p>
+                  <h2>4. Cek PAK Terbit</h2>
+                  <p>Cari data PAK yang sudah terbit menggunakan NIK/NIP. Dokumen dapat di-preview dan diunduh.</p>
+                  <h2>5. Cek Status Pengajuan</h2>
+                  <p>Masukkan NIP untuk melihat status terbaru pengajuan Anda. Jika status "Perbaikan", Anda dapat mengupdate data langsung.</p>
                 </div>
-              </div>
-            </div>
-          </div>
 
-          <div class="quick-help-section">
-            <h2><i class="fas fa-question-circle"></i> Butuh Bantuan Lebih Lanjut?</h2>
-            <div class="help-options">
-              <a href="#" class="help-btn help-faq" onclick="showHelpModal('faq'); return false;">
-                <i class="fas fa-comments"></i>
-                <span>FAQ - Pertanyaan Umum</span>
-              </a>
-              <a href="#" class="help-btn help-video" onclick="showHelpModal('video'); return false;">
-                <i class="fas fa-play-circle"></i>
-                <span>Video Tutorial</span>
-              </a>
-              <a href="#" class="help-btn help-download" onclick="showHelpModal('download'); return false;">
-                <i class="fas fa-download"></i>
-                <span>Unduh Panduan PDF</span>
-              </a>
-            </div>
-          </div>
-        </section>
-
-        <!-- ============================================
-             DATA MASTER (Sheet DATA)
-             ============================================ -->
-        <section class="page-section" id="dataMasterPage">
-          <div class="filter-section">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
-              <div>
-                <h3 style="color: var(--government-blue); margin: 0; display: flex; align-items: center; gap: 10px;">
-                  <i class="fas fa-database"></i> Data Master (Sheet DATA)
-                </h3>
-                <p style="color: var(--text-medium); font-size: 0.85rem; margin: 4px 0 0 0;">
-                  Sumber data utama untuk Pembuatan PAK Integrasi. Tabel: <code>data_master</code>
-                </p>
-              </div>
-              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                <button class="btn btn-success btn-sm" onclick="openDataMasterModal(null)">
-                  <i class="fas fa-plus"></i> Tambah Data
-                </button>
-                <button class="btn btn-primary btn-sm" onclick="openDataMasterBulkUploadModal()">
-                  <i class="fas fa-file-csv"></i> Upload Massal CSV
-                </button>
-                <button class="btn btn-warning btn-sm" onclick="loadDataMaster()" style="background: #64748b; color: white;">
-                  <i class="fas fa-sync-alt"></i> Refresh
-                </button>
-              </div>
-            </div>
-
-            <!-- Stats -->
-            <div class="data-master-stats">
-              <div class="data-master-stat">
-                <div class="stat-icon"><i class="fas fa-users"></i></div>
-                <div class="stat-value" id="statDataMasterTotal">0</div>
-                <div class="stat-label">Total Data Master</div>
-              </div>
-              <div class="data-master-stat">
-                <div class="stat-icon"><i class="fas fa-calculator"></i></div>
-                <div class="stat-value" id="statDataMasterAK">0.00</div>
-                <div class="stat-label">Total Angka Kredit</div>
-              </div>
-            </div>
-
-            <!-- Search -->
-            <div class="filter-grid">
-              <div class="filter-group">
-                <label class="filter-label">Pencarian</label>
-                <div class="search-wrapper">
-                  <i class="fas fa-search"></i>
-                  <input type="text" class="search-input" id="dataMasterSearch" placeholder="Cari nama, NIP, atau satuan kerja..." oninput="filterDataMaster()">
+                <!-- Page 6: Admin Panel -->
+                <div class="book-page-content" data-page="6">
+                  <h1><i class="fas fa-cog"></i> Panduan Admin</h1>
+                  <div class="warning-box"><i class="fas fa-exclamation-triangle"></i> Menu admin hanya dapat diakses oleh pengguna dengan role admin.</div>
+                  <h2>Data Master</h2>
+                  <p>Data master adalah sumber data utama untuk Pembuatan PAK Integrasi. Admin dapat menambah, edit, hapus data, atau upload massal via CSV.</p>
+                  <h2>Pembuatan PAK Integrasi</h2>
+                  <p>Pilih pegawai dari Data Master, lalu klik "Generate 4 Dokumen PAK" untuk membuat 4 dokumen (Konvensional, Integrasi, Kebutuhan AK, PAK Integrasi) dalam 1 PDF.</p>
+                  <h2>Editor Dokumen</h2>
+                  <p>Klik "Edit Dokumen" untuk mengedit dokumen seperti Microsoft Word. Perubahan tersimpan otomatis ke database.</p>
+                  <h2>Kelola Data Pengajuan</h2>
+                  <p>Admin dapat mengelola semua data pengajuan: edit, update status, hapus, export CSV, dan upload massal.</p>
                 </div>
-              </div>
-            </div>
-          </div>
 
-          <!-- Table -->
-          <div class="table-container">
-            <div class="table-header">
-              <h3 class="table-title"><i class="fas fa-list"></i> Daftar Data Master</h3>
-            </div>
-            <div class="table-scroll">
-              <table>
-                <thead>
-                  <tr>
-                    <th>No</th>
-                    <th>Nama Lengkap</th>
-                    <th>NIP</th>
-                    <th>Satuan Kerja</th>
-                    <th>Total AK</th>
-                    <th>Aksi</th>
-                  </tr>
-                </thead>
-                <tbody id="dataMasterTableBody"></tbody>
-              </table>
-            </div>
-            <div class="pagination-container">
-              <div class="pagination-info" id="dataMasterPaginationInfo">Menampilkan 0 - 0 dari 0 data</div>
-              <div class="pagination-controls" id="dataMasterPagination"></div>
+                <!-- Page 7: FAQ -->
+                <div class="book-page-content" data-page="7">
+                  <h1><i class="fas fa-question-circle"></i> Pertanyaan Umum (FAQ)</h1>
+                  <h3>Q: Bagaimana cara mengajukan PAK?</h3>
+                  <p>Buka menu "Formulir Pengajuan", isi data lengkap, upload 4 dokumen wajib, lalu klik "Submit Pengajuan". Nomor register akan terbit otomatis.</p>
+                  <h3>Q: Berapa lama proses verifikasi?</h3>
+                  <p>Proses verifikasi memakan waktu 3-5 hari kerja setelah dokumen lengkap diupload.</p>
+                  <h3>Q: Apa yang dilakukan jika status "Perbaikan"?</h3>
+                  <p>Buka menu "Cek Status Pengajuan", masukkan NIP, lalu klik "Update Data Perbaikan". Perbaiki data sesuai catatan admin.</p>
+                  <h3>Q: Bagaimana cara mendapatkan PAK yang sudah terbit?</h3>
+                  <p>Buka menu "Cek PAK Terbit", masukkan NIK/NIP. Jika status "Terbit", dokumen dapat di-preview dan diunduh.</p>
+                  <h3>Q: Dokumen apa saja yang perlu diupload?</h3>
+                  <ul>
+                    <li>Foto berwarna 4x6 cm (JPG/PNG, maks 2MB)</li>
+                    <li>SK Pangkat Terakhir 2022/2023 (PDF, maks 1MB)</li>
+                    <li>SK Jabatan Fungsional 2022/2023 (PDF, maks 1MB)</li>
+                    <li>PAK Konvensional s/d 2022 (PDF, maks 1MB)</li>
+                  </ul>
+                  <div class="success-box" style="margin-top: 20px;">
+                    <i class="fas fa-check-circle"></i> Jika masih ada pertanyaan, hubungi kontak PIC di halaman sebelumnya.
+                  </div>
+                </div>
+
+              </div>
+
+              <!-- Book Footer (page dots) -->
+              <div class="book-footer" id="bookFooter">
+                <!-- Dots akan di-generate oleh JS -->
+              </div>
+
             </div>
           </div>
         </section>
