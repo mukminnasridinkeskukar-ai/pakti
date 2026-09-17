@@ -128,24 +128,27 @@ async function insertPengajuan(formData) {
   // Generate nomor register unik
   const nomorRegister = generateNomorRegister();
 
+  // Helper: convert empty string to null (untuk field DATE yang tidak boleh kosong)
+  const toNull = (val) => (val === '' || val === undefined) ? null : val;
+
   const row = {
     nomor_register: nomorRegister,
     email: formData.email,
-    no_hp: formData.noHP,
+    no_hp: toNull(formData.noHP),
     nama: formData.nama,
     nip: formData.nip,
-    no_karpeg: formData.noKarpeg || null,
-    tempat_lahir: formData.tempatLahir,
-    tanggal_lahir: formData.tanggalLahir,
-    pendidikan: formData.pendidikan,
-    jenis_kelamin: formData.jenisKelamin,
-    pangkat_gol: formData.pangkatGol,
-    tmt_pangkat: formData.tmtPangkat,
-    jenis_jf: formData.jenisJF,
-    jenjang_jf: formData.jenjangJF,
-    tmt_jf: formData.tmtJF,
-    masa_kerja_gol: formData.masaKerjaGol,
-    satuan_kerja: formData.satuanKerja,
+    no_karpeg: toNull(formData.noKarpeg),
+    tempat_lahir: toNull(formData.tempatLahir),
+    tanggal_lahir: toNull(formData.tanggalLahir),
+    pendidikan: toNull(formData.pendidikan),
+    jenis_kelamin: toNull(formData.jenisKelamin),
+    pangkat_gol: toNull(formData.pangkatGol),
+    tmt_pangkat: toNull(formData.tmtPangkat),
+    jenis_jf: toNull(formData.jenisJF),
+    jenjang_jf: toNull(formData.jenjangJF),
+    tmt_jf: toNull(formData.tmtJF),
+    masa_kerja_gol: toNull(formData.masaKerjaGol),
+    satuan_kerja: toNull(formData.satuanKerja),
     status: 'Menunggu',
     catatan_admin: '',
   };
@@ -169,22 +172,24 @@ async function updatePengajuan(id, formData) {
     throw new Error('Supabase belum dikonfigurasi');
   }
 
+  const toNull = (val) => (val === '' || val === undefined) ? null : val;
+
   const row = {
     email: formData.email,
-    no_hp: formData.noHP,
+    no_hp: toNull(formData.noHP),
     nama: formData.nama,
-    no_karpeg: formData.noKarpeg || null,
-    tempat_lahir: formData.tempatLahir,
-    tanggal_lahir: formData.tanggalLahir,
-    pendidikan: formData.pendidikan,
-    jenis_kelamin: formData.jenisKelamin,
-    pangkat_gol: formData.pangkatGol,
-    tmt_pangkat: formData.tmtPangkat,
-    jenis_jf: formData.jenisJF,
-    jenjang_jf: formData.jenjangJF,
-    tmt_jf: formData.tmtJF,
-    masa_kerja_gol: formData.masaKerjaGol,
-    satuan_kerja: formData.satuanKerja,
+    no_karpeg: toNull(formData.noKarpeg),
+    tempat_lahir: toNull(formData.tempatLahir),
+    tanggal_lahir: toNull(formData.tanggalLahir),
+    pendidikan: toNull(formData.pendidikan),
+    jenis_kelamin: toNull(formData.jenisKelamin),
+    pangkat_gol: toNull(formData.pangkatGol),
+    tmt_pangkat: toNull(formData.tmtPangkat),
+    jenis_jf: toNull(formData.jenisJF),
+    jenjang_jf: toNull(formData.jenjangJF),
+    tmt_jf: toNull(formData.tmtJF),
+    masa_kerja_gol: toNull(formData.masaKerjaGol),
+    satuan_kerja: toNull(formData.satuanKerja),
     status: 'Menunggu',
     updated_at: new Date().toISOString(),
   };
@@ -277,23 +282,20 @@ async function adminEditPengajuan(id, fields) {
     throw new Error('Supabase belum dikonfigurasi');
   }
 
+  const toNull = (val) => (val === '' || val === undefined) ? null : val;
+
   const row = {
     nama: fields.nama,
     nip: fields.nip,
-    pangkat_gol: fields.pangkatGol,
-    jenis_jf: fields.jenisJF,
-    jenjang_jf: fields.jenjangJF,
-    satuan_kerja: fields.satuanKerja,
-    tmt_pangkat: fields.tmtPangkat || null,
-    tmt_jf: fields.tmtJF || null,
-    masa_kerja_gol: fields.masaKerjaGol,
+    pangkat_gol: toNull(fields.pangkatGol),
+    jenis_jf: toNull(fields.jenisJF),
+    jenjang_jf: toNull(fields.jenjangJF),
+    satuan_kerja: toNull(fields.satuanKerja),
+    tmt_pangkat: toNull(fields.tmtPangkat),
+    tmt_jf: toNull(fields.tmtJF),
+    masa_kerja_gol: toNull(fields.masaKerjaGol),
     updated_at: new Date().toISOString(),
   };
-
-  // Hapus field null/undefined supaya tidak overwrite dengan null
-  Object.keys(row).forEach((k) => {
-    if (row[k] === undefined) delete row[k];
-  });
 
   const { data, error } = await supabaseClient
     .from(TABLE_PENGAJUAN)
@@ -549,49 +551,58 @@ async function insertDataMaster(formData) {
     throw new Error('Supabase belum dikonfigurasi');
   }
 
+  // Helper: empty string → null (untuk DATE dan TEXT fields)
+  const toNull = (val) => (val === '' || val === undefined || val === null) ? null : val;
+  // Helper: empty/NaN → 0 (untuk NUMERIC fields)
+  const toNum = (val) => {
+    if (val === '' || val === undefined || val === null) return 0;
+    const n = parseFloat(val);
+    return isNaN(n) ? 0 : n;
+  };
+
   const row = {
     nip: formData.nip,
     nama: formData.nama,
-    no_karpeg: formData.no_karpeg || null,
-    tempat_lahir: formData.tempatLahir || null,
-    tanggal_lahir: formData.tanggalLahir || null,
-    pendidikan: formData.pendidikan || null,
-    jenis_kelamin: formData.jenisKelamin || null,
-    pangkat: formData.pangkat || null,
-    golongan: formData.golongan || null,
-    tmt_pangkat: formData.tmtPangkat || null,
-    jabatan_jf: formData.jabatanJf || null,
-    tmt_jf: formData.tmtJf || null,
-    masa_kerja_gol: formData.masaKerjaGol || null,
-    unit_kerja: formData.unitKerja || null,
-    instansi: formData.instansi || 'Dinas Kesehatan Kab. Kutai Kartanegara',
+    no_karpeg: toNull(formData.no_karpeg),
+    tempat_lahir: toNull(formData.tempatLahir),
+    tanggal_lahir: toNull(formData.tanggalLahir),
+    pendidikan: toNull(formData.pendidikan),
+    jenis_kelamin: toNull(formData.jenisKelamin),
+    pangkat: toNull(formData.pangkat),
+    golongan: toNull(formData.golongan),
+    tmt_pangkat: toNull(formData.tmtPangkat),
+    jabatan_jf: toNull(formData.jabatanJf),
+    tmt_jf: toNull(formData.tmtJf),
+    masa_kerja_gol: toNull(formData.masaKerjaGol),
+    unit_kerja: toNull(formData.unitKerja),
+    instansi: toNull(formData.instansi) || 'Dinas Kesehatan Kab. Kutai Kartanegara',
 
-    ak_lama_pendidikan: formData.akLamaPendidikan || 0,
-    ak_lama_tugas_pokok: formData.akLamaTugasPokok || 0,
-    ak_lama_pengembangan: formData.akLamaPengembangan || 0,
-    ak_lama_penunjang: formData.akLamaPenunjang || 0,
+    ak_lama_pendidikan: toNum(formData.akLamaPendidikan),
+    ak_lama_tugas_pokok: toNum(formData.akLamaTugasPokok),
+    ak_lama_pengembangan: toNum(formData.akLamaPengembangan),
+    ak_lama_penunjang: toNum(formData.akLamaPenunjang),
 
-    ak_baru_pendidikan: formData.akBaruPendidikan || 0,
-    ak_baru_tugas_pokok: formData.akBaruTugasPokok || 0,
-    ak_baru_pengembangan: formData.akBaruPengembangan || 0,
-    ak_baru_penunjang: formData.akBaruPenunjang || 0,
+    ak_baru_pendidikan: toNum(formData.akBaruPendidikan),
+    ak_baru_tugas_pokok: toNum(formData.akBaruTugasPokok),
+    ak_baru_pengembangan: toNum(formData.akBaruPengembangan),
+    ak_baru_penunjang: toNum(formData.akBaruPenunjang),
 
-    ak_minimal_pangkat: formData.akMinimalPangkat || 0,
-    ak_minimal_jenjang: formData.akMinimalJenjang || 0,
-    ak_minimal_pengembangan: formData.akMinimalPengembangan || 0,
+    ak_minimal_pangkat: toNum(formData.akMinimalPangkat),
+    ak_minimal_jenjang: toNum(formData.akMinimalJenjang),
+    ak_minimal_pengembangan: toNum(formData.akMinimalPengembangan),
 
-    nilai_das: formData.nilaiDasar || 0,
+    nilai_das: toNum(formData.nilaiDasar),
 
-    periode_penilaian: formData.periodePenilaian || null,
-    tahun_penilaian: formData.tahunPenilaian || null,
-    bulan_penilaian: formData.bulanPenilaian || 12,
-    predikat_kinerja: formData.predikatKinerja || 'Baik',
+    periode_penilaian: toNull(formData.periodePenilaian),
+    tahun_penilaian: formData.tahunPenilaian ? parseInt(formData.tahunPenilaian) : null,
+    bulan_penilaian: formData.bulanPenilaian ? parseInt(formData.bulanPenilaian) : 12,
+    predikat_kinerja: toNull(formData.predikatKinerja) || 'Baik',
 
-    tanggal_penetapan: formData.tanggalPenetapan || null,
-    lokasi_penetapan: formData.lokasiPenetapan || 'Tenggarong',
-    nama_pejabat: formData.namaPejabat || null,
-    nip_pejabat: formData.nipPejabat || null,
-    rekomendasi: formData.rekomendasi || null,
+    tanggal_penetapan: toNull(formData.tanggalPenetapan),
+    lokasi_penetapan: toNull(formData.lokasiPenetapan) || 'Tenggarong',
+    nama_pejabat: toNull(formData.namaPejabat),
+    nip_pejabat: toNull(formData.nipPejabat),
+    rekomendasi: toNull(formData.rekomendasi),
   };
 
   const { data, error } = await supabaseClient
@@ -612,49 +623,56 @@ async function updateDataMaster(id, formData) {
     throw new Error('Supabase belum dikonfigurasi');
   }
 
+  const toNull = (val) => (val === '' || val === undefined || val === null) ? null : val;
+  const toNum = (val) => {
+    if (val === '' || val === undefined || val === null) return 0;
+    const n = parseFloat(val);
+    return isNaN(n) ? 0 : n;
+  };
+
   const row = {
     nip: formData.nip,
     nama: formData.nama,
-    no_karpeg: formData.no_karpeg || null,
-    tempat_lahir: formData.tempatLahir || null,
-    tanggal_lahir: formData.tanggalLahir || null,
-    pendidikan: formData.pendidikan || null,
-    jenis_kelamin: formData.jenisKelamin || null,
-    pangkat: formData.pangkat || null,
-    golongan: formData.golongan || null,
-    tmt_pangkat: formData.tmtPangkat || null,
-    jabatan_jf: formData.jabatanJf || null,
-    tmt_jf: formData.tmtJf || null,
-    masa_kerja_gol: formData.masaKerjaGol || null,
-    unit_kerja: formData.unitKerja || null,
-    instansi: formData.instansi || 'Dinas Kesehatan Kab. Kutai Kartanegara',
+    no_karpeg: toNull(formData.no_karpeg),
+    tempat_lahir: toNull(formData.tempatLahir),
+    tanggal_lahir: toNull(formData.tanggalLahir),
+    pendidikan: toNull(formData.pendidikan),
+    jenis_kelamin: toNull(formData.jenisKelamin),
+    pangkat: toNull(formData.pangkat),
+    golongan: toNull(formData.golongan),
+    tmt_pangkat: toNull(formData.tmtPangkat),
+    jabatan_jf: toNull(formData.jabatanJf),
+    tmt_jf: toNull(formData.tmtJf),
+    masa_kerja_gol: toNull(formData.masaKerjaGol),
+    unit_kerja: toNull(formData.unitKerja),
+    instansi: toNull(formData.instansi) || 'Dinas Kesehatan Kab. Kutai Kartanegara',
 
-    ak_lama_pendidikan: formData.akLamaPendidikan || 0,
-    ak_lama_tugas_pokok: formData.akLamaTugasPokok || 0,
-    ak_lama_pengembangan: formData.akLamaPengembangan || 0,
-    ak_lama_penunjang: formData.akLamaPenunjang || 0,
+    ak_lama_pendidikan: toNum(formData.akLamaPendidikan),
+    ak_lama_tugas_pokok: toNum(formData.akLamaTugasPokok),
+    ak_lama_pengembangan: toNum(formData.akLamaPengembangan),
+    ak_lama_penunjang: toNum(formData.akLamaPenunjang),
 
-    ak_baru_pendidikan: formData.akBaruPendidikan || 0,
-    ak_baru_tugas_pokok: formData.akBaruTugasPokok || 0,
-    ak_baru_pengembangan: formData.akBaruPengembangan || 0,
-    ak_baru_penunjang: formData.akBaruPenunjang || 0,
+    ak_baru_pendidikan: toNum(formData.akBaruPendidikan),
+    ak_baru_tugas_pokok: toNum(formData.akBaruTugasPokok),
+    ak_baru_pengembangan: toNum(formData.akBaruPengembangan),
+    ak_baru_penunjang: toNum(formData.akBaruPenunjang),
 
-    ak_minimal_pangkat: formData.akMinimalPangkat || 0,
-    ak_minimal_jenjang: formData.akMinimalJenjang || 0,
-    ak_minimal_pengembangan: formData.akMinimalPengembangan || 0,
+    ak_minimal_pangkat: toNum(formData.akMinimalPangkat),
+    ak_minimal_jenjang: toNum(formData.akMinimalJenjang),
+    ak_minimal_pengembangan: toNum(formData.akMinimalPengembangan),
 
-    nilai_das: formData.nilaiDasar || 0,
+    nilai_das: toNum(formData.nilaiDasar),
 
-    periode_penilaian: formData.periodePenilaian || null,
-    tahun_penilaian: formData.tahunPenilaian || null,
-    bulan_penilaian: formData.bulanPenilaian || 12,
-    predikat_kinerja: formData.predikatKinerja || 'Baik',
+    periode_penilaian: toNull(formData.periodePenilaian),
+    tahun_penilaian: formData.tahunPenilaian ? parseInt(formData.tahunPenilaian) : null,
+    bulan_penilaian: formData.bulanPenilaian ? parseInt(formData.bulanPenilaian) : 12,
+    predikat_kinerja: toNull(formData.predikatKinerja) || 'Baik',
 
-    tanggal_penetapan: formData.tanggalPenetapan || null,
-    lokasi_penetapan: formData.lokasiPenetapan || 'Tenggarong',
-    nama_pejabat: formData.namaPejabat || null,
-    nip_pejabat: formData.nipPejabat || null,
-    rekomendasi: formData.rekomendasi || null,
+    tanggal_penetapan: toNull(formData.tanggalPenetapan),
+    lokasi_penetapan: toNull(formData.lokasiPenetapan) || 'Tenggarong',
+    nama_pejabat: toNull(formData.namaPejabat),
+    nip_pejabat: toNull(formData.nipPejabat),
+    rekomendasi: toNull(formData.rekomendasi),
 
     updated_at: new Date().toISOString(),
   };

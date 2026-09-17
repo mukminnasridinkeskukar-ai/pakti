@@ -372,7 +372,15 @@ async function handleFormSubmit(e) {
     setTimeout(() => navigateTo('tracking'), 8000);
   } catch (error) {
     console.error('[Submit] Error:', error);
-    toastError('Error: ' + (error.message || 'unknown'));
+    // Handle Supabase error object (punya .message, .code, .details)
+    let errMsg = 'Unknown error';
+    if (typeof error === 'object' && error !== null) {
+      errMsg = error.message || error.details || error.hint || JSON.stringify(error);
+    } else if (typeof error === 'string') {
+      errMsg = error;
+    }
+    toastError('Gagal submit: ' + errMsg);
+    console.error('[Submit] Full error:', JSON.stringify(error, null, 2));
   } finally {
     if (submitBtn) {
       submitBtn.disabled = false;
