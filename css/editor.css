@@ -197,6 +197,59 @@
   margin: 0 auto;
   transition: all 0.3s ease;
   min-height: 297mm;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ============================================
+   RULER (Penggaris horizontal)
+   ============================================ */
+.editor-ruler {
+  width: 100%;
+  height: 24px;
+  background: #f8fafc;
+  border-bottom: 1px solid #cbd5e1;
+  display: flex;
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.editor-ruler .ruler-margin-left,
+.editor-ruler .ruler-margin-right {
+  background: #e2e8f0;
+  height: 100%;
+  flex-shrink: 0;
+}
+
+.editor-ruler .ruler-content-area {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  overflow: hidden;
+}
+
+.editor-ruler .ruler-mark {
+  position: absolute;
+  top: 0;
+  width: 1px;
+  height: 100%;
+  background: #94a3b8;
+}
+
+.editor-ruler .ruler-mark span {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  font-size: 8px;
+  color: #64748b;
+  font-family: monospace;
+  white-space: nowrap;
+}
+
+.editor-ruler .ruler-mark.half {
+  height: 50%;
+  background: #cbd5e1;
 }
 
 /* Halaman A4 (default portrait) */

@@ -288,7 +288,7 @@
   /* SETIAP HALAMAN = 1 LEMBAR A4 EXACT */
   body.printing-pak .pak-page {
     width: 210mm;
-    height: 297mm; /* EXACT, bukan min-height */
+    height: 297mm; /* EXACT height */
     min-height: 297mm;
     max-height: 297mm;
     margin: 0 !important;
@@ -299,7 +299,7 @@
     break-after: page;
     page-break-inside: avoid;
     break-inside: avoid;
-    overflow: visible; /* JANGAN hidden - bisa potong data */
+    overflow: hidden; /* Hidden di print mode - cegah halaman extra */
     display: flex;
     flex-direction: column;
   }

@@ -212,11 +212,35 @@ async function initTinyMCEEditor() {
     }
   }
 
-  // Halaman A4 container
+  // Halaman A4 container dengan ruler
   const pageClass = editorPengaturanHalaman.orientation === 'landscape' ? 'a4-landscape' : 'a4-portrait';
+  const p = editorPengaturanHalaman;
+
+  // Generate ruler markings (cm 0-21 untuk A4 portrait width 210mm)
+  const rulerWidth = p.orientation === 'landscape' ? 297 : 210;
+  const leftMarginPx = (p.marginLeft / rulerWidth) * 100;
+  const rightMarginPx = (p.marginRight / rulerWidth) * 100;
+  let rulerMarks = '';
+  for (let cm = 0; cm <= rulerWidth / 10; cm++) {
+    const pos = (cm * 10 / rulerWidth) * 100;
+    rulerMarks += `<div class="ruler-mark" style="left: ${pos}%;"><span>${cm}</span></div>`;
+    // Add half-cm marks
+    if (cm < rulerWidth / 10) {
+      const halfPos = ((cm * 10 + 5) / rulerWidth) * 100;
+      rulerMarks += `<div class="ruler-mark half" style="left: ${halfPos}%;"></div>`;
+    }
+  }
 
   editorBody.innerHTML = `
     <div class="editor-page-container ${pageClass}" id="editorPageContainer">
+      <!-- Ruler horizontal -->
+      <div class="editor-ruler" id="editorRuler">
+        <div class="ruler-margin-left" style="width: ${leftMarginPx}%;"></div>
+        <div class="ruler-content-area" style="left: ${leftMarginPx}%; right: ${rightMarginPx}%;">
+          ${rulerMarks}
+        </div>
+        <div class="ruler-margin-right" style="width: ${rightMarginPx}%;"></div>
+      </div>
       <textarea id="tinyMCEEditor">${escapeHtml(initialContent)}</textarea>
     </div>
   `;
@@ -231,16 +255,11 @@ async function initTinyMCEEditor() {
     tinymce.get('tinyMCEEditor').remove();
   }
 
-  const p = editorPengaturanHalaman;
-
   // Inisialisasi TinyMCE dengan konfigurasi lengkap
+  // JANGAN set base_url manual - biarkan TinyMCE auto-detect dari script tag CDN
   tinymce.init({
     selector: '#tinyMCEEditor',
     license_key: 'gpl',
-
-    // Base URL untuk load plugins & skins dari CDN
-    base_url: 'https://cdn.jsdelivr.net/npm/tinymce@6.8.4',
-    suffix: '.min',
 
     height: '100%',
     width: '100%',
@@ -370,8 +389,9 @@ async function initTinyMCEEditor() {
     contextmenu: 'link image table | cell row column | paste | undo redo',
 
     // Skin
+    // Skin & content CSS - pakai default dari package (auto-load dari CDN)
     skin: 'oxide',
-    content_css: false,
+    content_css: 'default',
     statusbar: false,
 
     // Setup - custom buttons & shortcuts
@@ -648,6 +668,9 @@ function applyPengaturanHalaman() {
     pageContainer.classList.add(editorPengaturanHalaman.orientation === 'landscape' ? 'a4-landscape' : 'a4-portrait');
   }
 
+  // Update ruler markings sesuai margin baru
+  updateEditorRuler();
+
   // Update TinyMCE body style langsung
   if (editorInstance && editorInstance.getBody) {
     try {
@@ -677,6 +700,38 @@ function applyPengaturanHalaman() {
   editorHasUnsavedChanges = true;
   updateEditorSaveStatus('unsaved');
   scheduleAutoSave();
+}
+
+/**
+ * Update ruler markings sesuai pengaturan halaman terbaru
+ */
+function updateEditorRuler() {
+  const rulerEl = document.getElementById('editorRuler');
+  if (!rulerEl) return;
+
+  const p = editorPengaturanHalaman;
+  const rulerWidth = p.orientation === 'landscape' ? 297 : 210;
+  const leftMarginPx = (p.marginLeft / rulerWidth) * 100;
+  const rightMarginPx = (p.marginRight / rulerWidth) * 100;
+
+  let rulerMarks = '';
+  for (let cm = 0; cm <= rulerWidth / 10; cm++) {
+    const pos = (cm * 10 / rulerWidth) * 100;
+    rulerMarks += '<div class="ruler-mark" style="left: ' + pos + '%;"><span>' + cm + '</span></div>';
+    if (cm < rulerWidth / 10) {
+      const halfPos = ((cm * 10 + 5) / rulerWidth) * 100;
+      rulerMarks += '<div class="ruler-mark half" style="left: ' + halfPos + '%;"></div>';
+    }
+  }
+
+  rulerEl.innerHTML =
+    '<div class="ruler-margin-left" style="width: ' + leftMarginPx + '%;"></div>' +
+    '<div class="ruler-content-area" style="left: ' + leftMarginPx + '%; right: ' + rightMarginPx + '%;">' +
+    rulerMarks +
+    '</div>' +
+    '<div class="ruler-margin-right" style="width: ' + rightMarginPx + '%;"></div>';
+
+  console.log('[Editor] Ruler updated: left=' + p.marginLeft + 'mm, right=' + p.marginRight + 'mm');
 }
 
 /* ============================================
@@ -842,17 +897,28 @@ function exportDokumenPDF() {
   const pageWidth = p.orientation === 'landscape' ? '297mm' : '210mm';
   const pageHeight = p.orientation === 'landscape' ? '210mm' : '297mm';
 
+  // Split content at page breaks untuk create multiple A4 pages
+  // TinyMCE pagebreak: <hr class="mce-pagebreak" /> atau <!-- pagebreak -->
+  let contentParts = content.split(/<hr[^>]*mce-pagebreak[^>]*>|<!--\s*pagebreak\s*-->/i);
+
+  // Filter out empty parts
+  contentParts = contentParts.filter((part) => part.trim() !== '');
+
+  // Jika tidak ada page break, gunakan seluruh konten sebagai 1 halaman
+  if (contentParts.length === 0) {
+    contentParts = [content];
+  }
+
+  // Generate HTML untuk setiap halaman
+  const pagesHTML = contentParts.map((part) => {
+    return '<div class="pak-page" data-orientation="' + p.orientation + '" style="width: ' + pageWidth + '; height: ' + pageHeight + '; padding: ' + p.marginTop + 'mm ' + p.marginRight + 'mm ' + p.marginBottom + 'mm ' + p.marginLeft + 'mm; font-family: \'Times New Roman\', serif; font-size: 12pt; line-height: ' + p.lineHeight + '; box-sizing: border-box; overflow: hidden;">' + part + '</div>';
+  }).join('\n');
+
   const printWrapper = document.createElement('div');
   printWrapper.id = 'pakPrintWrapper';
   printWrapper.className = 'pak-print-wrapper';
 
-  printWrapper.innerHTML = `
-    <div class="pak-print-pages" style="background: #fff; padding: 0;">
-      <div class="pak-page" data-orientation="${p.orientation}" style="width: ${pageWidth}; height: ${pageHeight}; padding: ${p.marginTop}mm ${p.marginRight}mm ${p.marginBottom}mm ${p.marginLeft}mm; font-family: 'Times New Roman', serif; font-size: 12pt; line-height: ${p.lineHeight}; box-sizing: border-box;">
-        ${content}
-      </div>
-    </div>
-  `;
+  printWrapper.innerHTML = '<div class="pak-print-pages" style="background: #fff; padding: 0;">' + pagesHTML + '</div>';
 
   const oldWrapper = document.getElementById('pakPrintWrapper');
   if (oldWrapper) oldWrapper.remove();
