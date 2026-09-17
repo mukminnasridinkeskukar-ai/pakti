@@ -75,50 +75,88 @@
 }
 
 /* ============================================
-   KOP SURAT (image)
+   KOP SURAT (text-based, sesuai referensi)
    ============================================ */
-.pak-page .kop-surat-image {
+.pak-page .kop-surat {
   width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 2mm;
+}
+
+.pak-page .kop-logo-text {
+  flex-shrink: 0;
+  padding-top: 4px;
+}
+
+.pak-page .kop-logo-box {
+  width: 24mm;
+  height: 28mm;
+  border: 2px solid #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36pt;
+}
+
+.pak-page .kop-text-block {
+  flex: 1;
   text-align: center;
-  margin-bottom: 3mm;
-  padding-bottom: 2mm;
-  border-bottom: 2px solid #000;
+  padding-top: 2mm;
 }
 
-.pak-page .kop-surat-image img {
-  width: 100%;
-  max-width: 174mm;
-  height: auto;
-  display: block;
-  margin: 0 auto;
-}
-
-/* ============================================
-   JUDUL DOKUMEN
-   ============================================ */
-.pak-page .doc-title {
-  text-align: center;
-  margin: 4mm 0 3mm 0;
-  page-break-after: avoid;
-  break-after: avoid;
-}
-
-.pak-page .doc-title h2 {
+.pak-page .kop-line1 {
   font-size: 12pt;
   font-weight: bold;
   text-transform: uppercase;
-  margin: 0 0 1mm 0;
-  line-height: 1.25;
+  line-height: 1.3;
 }
 
-.pak-page .doc-title p {
-  font-size: 10pt;
-  font-style: italic;
-  margin: 0;
+.pak-page .kop-line2 {
+  font-size: 14pt;
+  font-weight: bold;
+  text-transform: uppercase;
+  line-height: 1.3;
+  margin-top: 1mm;
+}
+
+.pak-page .kop-line3 {
+  font-size: 8pt;
+  line-height: 1.3;
+  margin-top: 0.5mm;
+}
+
+.pak-page .kop-line-separator {
+  border-top: 3px double #000;
+  border-bottom: 1px solid #000;
+  margin-bottom: 4mm;
+  height: 4px;
 }
 
 /* ============================================
-   TABEL PAK
+   DOC TITLE BLOCK
+   ============================================ */
+.pak-page .doc-title-block {
+  text-align: center;
+  margin-bottom: 3mm;
+}
+
+.pak-page .doc-title-main {
+  font-size: 11pt;
+  font-weight: bold;
+  text-transform: uppercase;
+  line-height: 1.4;
+}
+
+.pak-page .doc-title-num {
+  font-size: 10pt;
+  font-weight: bold;
+  margin-top: 1mm;
+}
+
+/* ============================================
+   TABLES
    ============================================ */
 .pak-page .pak-table {
   width: 100%;
@@ -126,7 +164,7 @@
   margin-bottom: 3mm;
   page-break-inside: avoid;
   break-inside: avoid;
-  table-layout: fixed; /* penting: fix lebar kolom */
+  table-layout: fixed;
 }
 
 .pak-page .pak-table .section-header {
@@ -135,7 +173,7 @@
   text-align: left;
   padding: 3px 5px;
   border: 1px solid #000;
-  font-size: 9.5pt;
+  font-size: 9pt;
 }
 
 .pak-page .pak-table .section-sub-header {
@@ -152,7 +190,7 @@
   border: 1px solid #000;
   padding: 2px 4px;
   vertical-align: top;
-  font-size: 9.5pt;
+  font-size: 9pt;
   line-height: 1.25;
   word-wrap: break-word;
   overflow-wrap: break-word;
@@ -162,75 +200,63 @@
   background: #f5f5f5;
   text-align: center;
   font-weight: bold;
-  font-size: 9pt;
+  font-size: 8.5pt;
 }
 
 .pak-page .pak-table .col-no {
-  width: 8mm;
+  width: 7mm;
   text-align: center;
 }
 
 .pak-page .pak-table .col-label {
-  width: 40%;
+  width: 35%;
 }
 
-.pak-page .pak-table .col-value {
-  /* auto fill */
+.pak-page .pak-table .col-label-indent {
+  width: 35%;
+  padding-left: 8mm;
 }
 
 .pak-page .pak-table .col-ak {
   text-align: center;
-  width: 22mm;
+  width: 18mm;
 }
 
-.pak-page .pak-table .ak-total-row td {
-  background: #f0f0f0;
-  text-align: center;
+.pak-page .pak-table .subtotal-row td {
+  font-style: italic;
+}
+
+.pak-page .pak-table .total-row td {
+  background: #e8e8e8;
   font-weight: bold;
+  text-align: center;
 }
 
-.pak-page .pak-table .ak-total-row td:first-child {
+.pak-page .pak-table .total-row td:first-child,
+.pak-page .pak-table .total-row td.col-label {
   text-align: left;
-}
-
-/* ============================================
-   REKOMENDASI BOX
-   ============================================ */
-.pak-page .rekomendasi-box {
-  border: 1px solid #000;
-  padding: 5px 7px;
-  margin: 3mm 0;
-  font-size: 9.5pt;
-  background: #fafafa;
-  page-break-inside: avoid;
-  break-inside: avoid;
 }
 
 /* ============================================
    TANDA TANGAN
    ============================================ */
-.pak-page .ttd-table {
+.pak-page .ttd-block {
   width: 100%;
-  margin-top: auto; /* push ke bawah */
-  padding-top: 5mm;
+  text-align: left;
+  padding-left: 55%;
+  margin-top: 6mm;
   page-break-inside: avoid;
   break-inside: avoid;
 }
 
-.pak-page .ttd-cell {
-  text-align: left;
-  padding-left: 55%;
-  vertical-align: top;
-  font-size: 9.5pt;
-}
-
-.pak-page .ttd-cell p {
+.pak-page .ttd-block p {
   margin: 0 0 1mm 0;
+  font-size: 9pt;
   line-height: 1.35;
 }
 
 .pak-page .ttd-space {
-  height: 18mm;
+  height: 20mm;
 }
 
 /* ============================================
@@ -325,9 +351,8 @@
   }
 
   /* Kop surat */
-  body.printing-pak .kop-surat-image img {
-    width: 174mm;
-    max-width: 100%;
+  body.printing-pak .kop-surat {
+    display: flex !important;
   }
 
   /* Tabel - prevent row split */
