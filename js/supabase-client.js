@@ -21,6 +21,7 @@ function mapRowToUI(row) {
   if (!row) return null;
   return {
     // Identitas
+    NomorRegister: row.nomor_register || '',
     Email: row.email || '',
     NoHP: row.no_hp || '',
     'Nama Lengkap dengan Gelar': row.nama || '',
@@ -103,6 +104,19 @@ async function fetchPAKTerbit(nip) {
 }
 
 /**
+ * Generate nomor register unik
+ * Format: PAKTI-YYYYMMDD-XXXX (XXXX = random 4 digit)
+ */
+function generateNomorRegister() {
+  const now = new Date();
+  const ymd = now.getFullYear().toString() +
+    String(now.getMonth() + 1).padStart(2, '0') +
+    String(now.getDate()).padStart(2, '0');
+  const random = Math.floor(1000 + Math.random() * 9000);
+  return 'PAKTI-' + ymd + '-' + random;
+}
+
+/**
  * Insert pengajuan baru (dari Formulir Pengajuan)
  * Insert data dulu, lalu upload dokumen dilakukan terpisah
  */
@@ -111,7 +125,11 @@ async function insertPengajuan(formData) {
     throw new Error('Supabase belum dikonfigurasi');
   }
 
+  // Generate nomor register unik
+  const nomorRegister = generateNomorRegister();
+
   const row = {
+    nomor_register: nomorRegister,
     email: formData.email,
     no_hp: formData.noHP,
     nama: formData.nama,

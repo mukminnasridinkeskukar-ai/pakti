@@ -65,6 +65,11 @@ function navigateTo(page) {
     loadTrackingData();
   } else if (page === 'pakTerbit') {
     loadPakTerbitData();
+  } else if (page === 'formulir') {
+    // Update tanggal & waktu otomatis saat halaman formulir dibuka
+    if (typeof updateTanggalWaktuOtomatis === 'function') {
+      updateTanggalWaktuOtomatis();
+    }
   } else if (page === 'cekStatus') {
     const nikInput = document.getElementById('cekNikInput');
     const resultDiv = document.getElementById('cekStatusResult');

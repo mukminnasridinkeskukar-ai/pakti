@@ -16,6 +16,7 @@
 -- Menyimpan data pengajuan PAK dari PNS
 CREATE TABLE IF NOT EXISTS pengajuan_pak (
     id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    nomor_register      TEXT UNIQUE,
     email               TEXT NOT NULL,
     no_hp               TEXT,
     nama                TEXT NOT NULL,

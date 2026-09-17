@@ -1,5 +1,9 @@
 /* ============================================
  * PAKTI - Formulir Pengajuan Logic
+ * ============================================
+ * Fitur:
+ * - Nomor register & tanggal otomatis di atas formulir
+ * - Submit → terbitkan nomor register yang bisa di-download
  * ============================================ */
 
 // File storage untuk upload
@@ -17,6 +21,33 @@ let selectedUpdateFiles = {
   upd_skJabfung: null,
   upd_pakKonvensional: null,
 };
+
+/**
+ * Update tanggal & waktu otomatis di formulir
+ * Dipanggil saat halaman formulir dibuka
+ */
+function updateTanggalWaktuOtomatis() {
+  const now = new Date();
+  const formatted = now.toLocaleString('id-ID', {
+    weekday: 'long',
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  const el = document.getElementById('displayTanggalWaktu');
+  if (el) el.textContent = formatted;
+}
+
+// Update tanggal setiap 1 detik (agar tetap aktual)
+setInterval(() => {
+  const formVisible = document.getElementById('formulirPage');
+  if (formVisible && formVisible.classList.contains('active')) {
+    updateTanggalWaktuOtomatis();
+  }
+}, 1000);
 
 // Konfigurasi file
 const fileConfig = {
@@ -311,7 +342,17 @@ async function handleFormSubmit(e) {
     };
     allData.unshift(newRow);
 
-    // Reset form
+    // Tampilkan nomor register di formulir
+    const nomorRegEl = document.getElementById('displayNomorRegister');
+    if (nomorRegEl) {
+      nomorRegEl.textContent = insertedRow.NomorRegister || '—';
+    }
+    const nomorRegInput = document.getElementById('inputNomorRegister');
+    if (nomorRegInput) {
+      nomorRegInput.value = insertedRow.NomorRegister || '';
+    }
+
+    // Reset form (tapi biarkan nomor register terlihat)
     document.getElementById('pengajuanForm').reset();
     selectedFiles = { foto: null, skPangkat: null, skJabfung: null, pakKonvensional: null };
     ['Foto', 'SKPangkat', 'SKJabfung', 'PAK'].forEach((type) => {
@@ -324,12 +365,11 @@ async function handleFormSubmit(e) {
       if (uploadAreaEl) uploadAreaEl.classList.remove('has-file');
     });
 
-    toastSuccess(
-      '✅ Pengajuan berhasil!\n• Data tersimpan ke database\n• 4 dokumen terupload ke storage\nStatus: Menunggu proses admin'
-    );
+    // Tampilkan modal sukses dengan nomor register + tombol download
+    showRegisterSuccessModal(insertedRow);
 
-    // Redirect to tracking page
-    setTimeout(() => navigateTo('tracking'), 2000);
+    // Redirect to tracking page setelah modal ditutup (8 detik)
+    setTimeout(() => navigateTo('tracking'), 8000);
   } catch (error) {
     console.error('[Submit] Error:', error);
     toastError('Error: ' + (error.message || 'unknown'));
@@ -339,6 +379,186 @@ async function handleFormSubmit(e) {
       submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Pengajuan';
     }
   }
+}
+
+/* ============================================
+ * MODAL SUKSES DENGAN NOMOR REGISTER & DOWNLOAD
+ * ============================================ */
+function showRegisterSuccessModal(insertedRow) {
+  let modal = document.getElementById('registerSuccessModal');
+  if (modal) modal.remove();
+
+  const nomorRegister = insertedRow.NomorRegister || '—';
+  const nama = insertedRow['Nama Lengkap dengan Gelar'] || '-';
+  const nip = insertedRow['NIP'] || '-';
+  const satuanKerja = insertedRow['Satuan Kerja'] || '-';
+  const now = new Date();
+  const tanggalSubmit = now.toLocaleString('id-ID', {
+    weekday: 'long',
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  modal = document.createElement('div');
+  modal.id = 'registerSuccessModal';
+  modal.className = 'modal-overlay active';
+  modal.style.cssText = 'display: flex; z-index: 10000;';
+
+  modal.innerHTML = `
+    <div class="modal" style="max-width: 500px;">
+      <div class="modal-body" style="padding: 30px; text-align: center;">
+        <div style="width: 80px; height: 80px; background: var(--success); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+          <i class="fas fa-check" style="font-size: 40px; color: white;"></i>
+        </div>
+        <h2 style="color: var(--text-dark); margin-bottom: 8px;">Pengajuan Berhasil!</h2>
+        <p style="color: var(--text-medium); margin-bottom: 20px;">Data pengajuan Anda berhasil tersimpan ke database.</p>
+
+        <!-- Nomor Register -->
+        <div style="background: linear-gradient(135deg, #e8f0fe 0%, #f0f7ff 100%); padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 2px solid var(--primary-blue);">
+          <div style="font-size: 0.75rem; color: var(--text-medium); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; margin-bottom: 8px;">
+            <i class="fas fa-hashtag"></i> Nomor Register
+          </div>
+          <div style="font-size: 1.5rem; font-weight: 800; color: var(--government-blue); font-family: 'Courier New', monospace; letter-spacing: 1px;">
+            ${escapeHtml(nomorRegister)}
+          </div>
+        </div>
+
+        <!-- Detail Pengajuan -->
+        <div style="background: var(--light-bg); padding: 16px; border-radius: 8px; margin-bottom: 20px; text-align: left; font-size: 0.85rem;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+            <span style="color: var(--text-light);">Nama:</span>
+            <span style="font-weight: 600;">${escapeHtml(nama)}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+            <span style="color: var(--text-light);">NIP:</span>
+            <span style="font-family: monospace; font-weight: 600;">${escapeHtml(nip)}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+            <span style="color: var(--text-light);">Satuan Kerja:</span>
+            <span style="font-weight: 600;">${escapeHtml(satuanKerja)}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: var(--text-light);">Tanggal Submit:</span>
+            <span style="font-weight: 600;">${escapeHtml(tanggalSubmit)}</span>
+          </div>
+        </div>
+
+        <p style="font-size: 0.8rem; color: var(--text-light); margin-bottom: 16px;">
+          <i class="fas fa-info-circle"></i> Simpan nomor register ini untuk cek status pengajuan Anda. Klik tombol di bawah untuk mengunduh bukti pendaftaran.
+        </p>
+
+        <!-- Tombol Download & Tutup -->
+        <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+          <button class="btn btn-success" onclick="downloadBuktiRegister('${escapeHtml(nomorRegister)}', '${escapeHtml(nama)}', '${escapeHtml(nip)}', '${escapeHtml(satuanKerja)}', '${escapeHtml(tanggalSubmit)}')">
+            <i class="fas fa-download"></i> Download Bukti Register
+          </button>
+          <button class="btn btn-primary" onclick="document.getElementById('registerSuccessModal').remove()">
+            <i class="fas fa-check"></i> Tutup
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  modal.addEventListener('click', function (e) {
+    if (e.target === modal) modal.remove();
+  });
+}
+
+/**
+ * Download bukti register sebagai file HTML (printable)
+ * User bisa save as PDF dari browser print
+ */
+function downloadBuktiRegister(nomorRegister, nama, nip, satuanKerja, tanggalSubmit) {
+  const html = `
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Bukti Register - ${escapeHtml(nomorRegister)}</title>
+  <style>
+    @page { size: A4; margin: 2cm; }
+    body { font-family: 'Times New Roman', serif; font-size: 12pt; line-height: 1.5; color: #000; }
+    .header { text-align: center; border-bottom: 3px double #000; padding-bottom: 10px; margin-bottom: 20px; }
+    .header h1 { font-size: 14pt; margin: 0; }
+    .header h2 { font-size: 11pt; margin: 4px 0 0 0; font-weight: normal; }
+    .content { padding: 20px 0; }
+    .register-box { text-align: center; background: #f0f7ff; padding: 15px; border: 2px solid #1a73e8; border-radius: 8px; margin: 20px 0; }
+    .register-box .label { font-size: 9pt; color: #666; text-transform: uppercase; letter-spacing: 1px; }
+    .register-box .value { font-size: 18pt; font-weight: bold; color: #0d47a1; font-family: 'Courier New', monospace; margin-top: 5px; }
+    table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+    td { padding: 6px 8px; border-bottom: 1px solid #ddd; }
+    td.label { width: 40%; color: #666; font-weight: 600; }
+    td.value { font-weight: 600; }
+    .footer { text-align: center; margin-top: 30px; padding-top: 15px; border-top: 1px solid #ddd; font-size: 9pt; color: #999; }
+    .ttd { text-align: right; margin-top: 40px; }
+    .ttd p { margin: 2px 0; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>PEMERINTAH KABUPATEN KUTAI KARTANEGARA</h1>
+    <h2>DINAS KESEHATAN</h2>
+  </div>
+
+  <h2 style="text-align: center; margin-bottom: 20px;">BUKTI PENDAFTARAN PENGAJUAN PAK INTEGRASI</h2>
+
+  <div class="register-box">
+    <div class="label">Nomor Register</div>
+    <div class="value">${escapeHtml(nomorRegister)}</div>
+  </div>
+
+  <table>
+    <tr><td class="label">Nama Lengkap</td><td class="value">${escapeHtml(nama)}</td></tr>
+    <tr><td class="label">NIP</td><td class="value">${escapeHtml(nip)}</td></tr>
+    <tr><td class="label">Satuan Kerja</td><td class="value">${escapeHtml(satuanKerja)}</td></tr>
+    <tr><td class="label">Tanggal Submit</td><td class="value">${escapeHtml(tanggalSubmit)}</td></tr>
+    <tr><td class="label">Status</td><td class="value">Menunggu Verifikasi Admin</td></tr>
+  </table>
+
+  <p style="margin-top: 20px; font-size: 10pt;">
+    <strong>Catatan:</strong> Simpan nomor register ini untuk melakukan pengecekan status pengajuan Anda melalui menu "Cek Status Pengajuan" di platform PAKTI.
+  </p>
+
+  <div class="ttd">
+    <p>Diterima oleh,</p>
+    <p style="margin-top: 60px;">__________________________</p>
+    <p>Petugas Penerima</p>
+  </div>
+
+  <div class="footer">
+    <p>Dokumen ini dihasilkan oleh Sistem PAKTI (Pengelolaan Angka Kredit Integrasi)</p>
+    <p>Pemerintah Kabupaten Kutai Kartanegara &copy; ${new Date().getFullYear()}</p>
+  </div>
+</body>
+</html>
+  `;
+
+  const blob = new Blob(['\ufeff' + html], { type: 'text/html;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'Bukti_Register_' + nomorRegister + '.html';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  toastSuccess('Bukti register berhasil diunduh! Buka file & print/save as PDF.');
+
+  // Auto-open print dialog di tab baru (optional)
+  setTimeout(() => {
+    const printWin = window.open('', '_blank');
+    if (printWin) {
+      printWin.document.write(html);
+      printWin.document.close();
+      setTimeout(() => printWin.print(), 500);
+    }
+  }, 500);
 }
 
 /**

@@ -133,8 +133,8 @@
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-header">
         <div class="sidebar-logo"><i class="fas fa-file-signature"></i></div>
-        <h2 class="sidebar-title">Selamat Datang, PNS Kutai Kartanegara</h2>
-        <p class="sidebar-subtitle">Dashboard Pengelolaan PAK Integrasi PNS Kab. Kutai Kartanegara</p>
+        <h2 class="sidebar-title">PAKTI</h2>
+        <p class="sidebar-subtitle">Pengelolaan Angka Kredit Integrasi</p>
       </div>
 
       <nav class="sidebar-menu">
@@ -368,6 +368,27 @@
         <section class="page-section" id="formulirPage">
           <div class="form-container">
             <h2 class="form-title"><i class="fas fa-file-plus"></i> Formulir Pengajuan PAK Integrasi PNS</h2>
+
+            <!-- Nomor Register & Tanggal Otomatis -->
+            <div style="display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #e8f0fe 0%, #f0f7ff 100%); padding: 16px 20px; border-radius: 10px; margin-bottom: 24px; border-left: 4px solid var(--primary-blue); flex-wrap: wrap; gap: 12px;">
+              <div>
+                <div style="font-size: 0.75rem; color: var(--text-medium); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-bottom: 4px;">
+                  <i class="fas fa-hashtag"></i> Nomor Register
+                </div>
+                <div id="displayNomorRegister" style="font-size: 1.1rem; font-weight: 700; color: var(--government-blue); font-family: 'Courier New', monospace;">
+                  — Akan terbit setelah submit —
+                </div>
+                <input type="hidden" id="inputNomorRegister" name="nomorRegister" value="">
+              </div>
+              <div style="text-align: right;">
+                <div style="font-size: 0.75rem; color: var(--text-medium); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-bottom: 4px;">
+                  <i class="fas fa-calendar-alt"></i> Tanggal & Waktu
+                </div>
+                <div id="displayTanggalWaktu" style="font-size: 1rem; font-weight: 600; color: var(--text-dark);">
+                  —
+                </div>
+              </div>
+            </div>
 
             <form id="pengajuanForm">
               <div class="form-grid">
