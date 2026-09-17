@@ -169,11 +169,16 @@
         <div class="menu-section">Informasi</div>
 
         <a class="menu-item" data-page="petunjuk" href="#">
-          <i class="fas fa-book-open"></i>
-          <span>Petunjuk Penggunaan</span>
+          <i class="fas fa-book-reader"></i>
+          <span>Panduan Pemohon</span>
         </a>
 
         <div class="menu-section">Administrasi</div>
+
+        <a class="menu-item" data-page="petunjukAdmin" href="#">
+          <i class="fas fa-book"></i>
+          <span>Panduan Admin</span>
+        </a>
 
         <a class="menu-item" data-page="dataMaster" href="#">
           <i class="fas fa-database"></i>
@@ -807,7 +812,7 @@
               <!-- Book Toolbar -->
               <div class="book-toolbar">
                 <div class="book-toolbar-title">
-                  <i class="fas fa-book-open"></i> Petunjuk Penggunaan PAKTI
+                  <i class="fas fa-book-reader"></i> Panduan Pemohon PAKTI
                 </div>
                 <div class="book-nav-controls">
                   <button class="book-nav-btn" id="bookPrevBtn" onclick="bookPrevPage()" title="Halaman sebelumnya">
@@ -1022,6 +1027,224 @@
               <div class="book-footer" id="bookFooter">
                 <!-- Dots akan di-generate oleh JS -->
               </div>
+
+            </div>
+          </div>
+        </section>
+
+        <!-- ============================================
+             PANDUAN ADMIN (Buku Read-Only)
+             ============================================ -->
+        <section class="page-section" id="petunjukAdminPage">
+          <div class="petunjuk-book-container">
+            <div class="book-viewer" oncontextmenu="return false" oncopy="return false" oncut="return false" onselectstart="return false">
+
+              <div class="book-toolbar" style="background: linear-gradient(135deg, #0d47a1 0%, #1565c0 100%);">
+                <div class="book-toolbar-title">
+                  <i class="fas fa-book"></i> Panduan Admin PAKTI
+                </div>
+                <div class="book-nav-controls">
+                  <button class="book-nav-btn" id="adminBookPrevBtn" onclick="adminBookPrevPage()" title="Halaman sebelumnya">
+                    <i class="fas fa-chevron-left"></i>
+                  </button>
+                  <span class="book-page-indicator" id="adminBookPageIndicator">1 / 8</span>
+                  <button class="book-nav-btn" id="adminBookNextBtn" onclick="adminBookNextPage()" title="Halaman berikutnya">
+                    <i class="fas fa-chevron-right"></i>
+                  </button>
+                </div>
+              </div>
+
+              <div class="book-pages">
+
+                <!-- Admin Page 1: Pengenalan Admin -->
+                <div class="book-page-content active" data-page="1">
+                  <h1><i class="fas fa-user-shield"></i> Panduan Administrator</h1>
+                  <div class="info-box"><i class="fas fa-info-circle"></i> Panduan khusus untuk administrator sistem PAKTI. Menu administrasi hanya dapat diakses oleh pengguna dengan role admin.</div>
+                  <h2>Menu Administrasi</h2>
+                  <p>Saat login sebagai admin, Anda memiliki akses ke menu administrasi berikut:</p>
+                  <ul>
+                    <li><strong>Panduan Admin</strong> — Buku panduan ini</li>
+                    <li><strong>Data Master</strong> — Kelola data master pegawai</li>
+                    <li><strong>Pembuatan PAK Integrasi</strong> — Generate 4 dokumen PAK</li>
+                    <li><strong>Kelola Data Pengajuan</strong> — CRUD data pengajuan publik</li>
+                  </ul>
+                  <h2>Login Admin</h2>
+                  <p>Untuk mengakses menu administrasi, login dengan kredensial yang telah diberikan. Hubungi Koordinator PAK jika Anda memerlukan akses admin.</p>
+                  <h2>Peran Admin</h2>
+                  <p>Administrator bertanggung jawab untuk:</p>
+                  <ul>
+                    <li>Verifikasi dan validasi data pengajuan dari pemohon</li>
+                    <li>Update status pengajuan (Menunggu → Perbaikan/Ditolak/Terbit)</li>
+                    <li>Kelola data master untuk Pembuatan PAK Integrasi</li>
+                    <li>Generate dan cetak dokumen PAK dalam format PDF</li>
+                    <li>Edit dokumen PAK menggunakan editor Word-like</li>
+                    <li>Upload massal data via CSV</li>
+                    <li>Export data pengajuan ke CSV/Excel</li>
+                  </ul>
+                </div>
+
+                <!-- Admin Page 2: Data Master -->
+                <div class="book-page-content" data-page="2">
+                  <h1><i class="fas fa-database"></i> Data Master (Sheet DATA)</h1>
+                  <div class="info-box"><i class="fas fa-info-circle"></i> Data Master adalah sumber data utama untuk Pembuatan PAK Integrasi. Berbeda dari data pengajuan publik.</div>
+                  <h2>Tambah Data Master</h2>
+                  <ol>
+                    <li>Klik tombol <strong>"Tambah Data"</strong> di kanan atas</li>
+                    <li>Isi formulir lengkap (36 field): identitas pegawai, AK lama/baru, AK minimal, nilai dasar, pejabat penilai</li>
+                    <li>Klik <strong>"Simpan"</strong></li>
+                  </ol>
+                  <h2>Upload Massal CSV</h2>
+                  <ol>
+                    <li>Klik <strong>"Upload Massal CSV"</strong></li>
+                    <li>Download template CSV (sudah berisi 3 contoh data valid)</li>
+                    <li>Edit template di Excel/Google Sheets</li>
+                    <li>Upload file CSV yang sudah diisi</li>
+                    <li>Preview akan muncul dengan validasi otomatis</li>
+                    <li>Klik <strong>"Upload ke Database"</strong></li>
+                  </ol>
+                  <h2>Edit & Hapus Data</h2>
+                  <p>Setiap baris data memiliki tombol:</p>
+                  <ul>
+                    <li><i class="fas fa-edit"></i> <strong>Edit</strong> — Edit semua field data master</li>
+                    <li><i class="fas fa-trash"></i> <strong>Hapus</strong> — Hapus data (dengan konfirmasi)</li>
+                  </ul>
+                </div>
+
+                <!-- Admin Page 3: Pembuatan PAK Integrasi -->
+                <div class="book-page-content" data-page="3">
+                  <h1><i class="fas fa-file-signature"></i> Pembuatan PAK Integrasi</h1>
+                  <div class="info-box"><i class="fas fa-info-circle"></i> Generate 4 dokumen PAK dalam 1 file PDF dari data yang ada di Data Master.</div>
+                  <h2>Cara Generate Dokumen PAK</h2>
+                  <ol>
+                    <li>Buka menu <strong>"Pembuatan PAK Integrasi"</strong></li>
+                    <li>Pilih pegawai dari dropdown (data dari Data Master)</li>
+                    <li>Klik <strong>"Generate 4 Dokumen PAK"</strong></li>
+                    <li>Preview 4 halaman akan muncul</li>
+                    <li>Klik <strong>"Print / Save as PDF"</strong> untuk download</li>
+                  </ol>
+                  <h2>4 Dokumen yang Dihasilkan</h2>
+                  <ul>
+                    <li><strong>Halaman 1:</strong> Penetapan Angka Kredit Konvensional</li>
+                    <li><strong>Halaman 2:</strong> Penyesuaian AK ke Integrasi</li>
+                    <li><strong>Halaman 3:</strong> Perhitungan Kebutuhan Kekurangan AK</li>
+                    <li><strong>Halaman 4:</strong> Penetapan Angka Kredit Integrasi</li>
+                  </ul>
+                  <div class="warning-box"><i class="fas fa-exclamation-triangle"></i> Pastikan data di Data Master sudah lengkap sebelum generate dokumen PAK.</div>
+                </div>
+
+                <!-- Admin Page 4: Editor Dokumen -->
+                <div class="book-page-content" data-page="4">
+                  <h1><i class="fas fa-file-edit"></i> Editor Dokumen PAK</h1>
+                  <div class="info-box"><i class="fas fa-info-circle"></i> Editor mirip Microsoft Word untuk mengedit dokumen PAK secara langsung.</div>
+                  <h2>Membuka Editor</h2>
+                  <ol>
+                    <li>Generate dokumen PAK seperti biasa</li>
+                    <li>Klik tombol <strong>"Edit Dokumen"</strong></li>
+                    <li>Editor fullscreen terbuka dengan halaman A4</li>
+                  </ol>
+                  <h2>Fitur Editor</h2>
+                  <ul>
+                    <li><strong>Menubar:</strong> File, Edit, View, Insert, Format, Table, Tools</li>
+                    <li><strong>Toolbar:</strong> Bold, Italic, Underline, Font, Size, Color, Alignment, List</li>
+                    <li><strong>Tabel:</strong> Insert, edit row/column, merge cell, properties</li>
+                    <li><strong>Image:</strong> Upload gambar dari komputer</li>
+                    <li><strong>Page Break:</strong> Pisah halaman dokumen</li>
+                    <li><strong>Ruler:</strong> Visualisasi margin & lebar halaman</li>
+                  </ul>
+                  <h2>Autosave</h2>
+                  <p>Perubahan disimpan otomatis ke database setiap 2 detik setelah berhenti mengetik. Status penyimpanan terlihat di header editor.</p>
+                  <h2>Version History</h2>
+                  <p>Klik tombol <strong>"Versi"</strong> untuk melihat riwayat perubahan. Setiap save membuat versi baru. Anda dapat memulihkan (restore) versi sebelumnya.</p>
+                </div>
+
+                <!-- Admin Page 5: Kelola Data Pengajuan -->
+                <div class="book-page-content" data-page="5">
+                  <h1><i class="fas fa-cog"></i> Kelola Data Pengajuan</h1>
+                  <div class="info-box"><i class="fas fa-info-circle"></i> Admin dapat mengelola semua data pengajuan dari pemohon: edit, update status, hapus, export, dan upload massal.</div>
+                  <h2>Update Status Pengajuan</h2>
+                  <ol>
+                    <li>Klik tombol <i class="fas fa-tasks"></i> (Update Status) pada baris data</li>
+                    <li>Pilih status baru: <strong>Menunggu, Perbaikan, Ditolak, atau Terbit</strong></li>
+                    <li>Tulis catatan admin (opsional)</li>
+                    <li>Klik <strong>"Simpan"</strong></li>
+                  </ol>
+                  <h2>Edit Data Pengajuan</h2>
+                  <ol>
+                    <li>Klik tombol <i class="fas fa-edit"></i> (Edit) pada baris data</li>
+                    <li>Edit field yang perlu diperbaiki</li>
+                    <li>Upload ulang dokumen jika diperlukan (opsional)</li>
+                    <li>Klik <strong>"Simpan Perubahan"</strong></li>
+                  </ol>
+                  <h2>Hapus Data</h2>
+                  <ol>
+                    <li>Klik tombol <i class="fas fa-trash"></i> (Hapus)</li>
+                    <li>Konfirmasi penghapusan</li>
+                  </ol>
+                </div>
+
+                <!-- Admin Page 6: Upload Massal & Export -->
+                <div class="book-page-content" data-page="6">
+                  <h1><i class="fas fa-file-csv"></i> Upload Massal & Export</h1>
+                  <h2>Upload Massal CSV (Pengajuan)</h2>
+                  <ol>
+                    <li>Klik <strong>"Upload Massal CSV"</strong> di header Kelola Data Pengajuan</li>
+                    <li>Download template CSV</li>
+                    <li>Isi data (3 field wajib: email, nama, nip)</li>
+                    <li>Upload file → preview dengan validasi otomatis</li>
+                    <li>Klik <strong>"Upload ke Database"</strong></li>
+                  </ol>
+                  <h2>Export Data</h2>
+                  <ol>
+                    <li>Klik <strong>"Export CSV"</strong> di header</li>
+                    <li>File CSV terdownload dengan semua data pengajuan</li>
+                    <li>Buka di Excel/Google Sheets</li>
+                  </ol>
+                  <h2>Printout Data</h2>
+                  <p>Klik tombol <strong>"Printout"</strong> untuk mencetak halaman tabel data. Gunakan print dialog browser untuk Save as PDF.</p>
+                </div>
+
+                <!-- Admin Page 7: Keamanan & Hak Akses -->
+                <div class="book-page-content" data-page="7">
+                  <h1><i class="fas fa-shield-alt"></i> Keamanan & Hak Akses</h1>
+                  <div class="warning-box"><i class="fas fa-exclamation-triangle"></i> Menu administrasi hanya dapat diakses oleh pengguna dengan role admin.</div>
+                  <h2>Role Pengguna</h2>
+                  <ul>
+                    <li><strong>Admin:</strong> Akses penuh ke semua menu administrasi</li>
+                    <li><strong>SDMK:</strong> Akses terbatas sesuai satuan kerja</li>
+                    <li><strong>Publik:</strong> Hanya bisa lihat Dashboard, Formulir, Tracking, Cek Status (tanpa login)</li>
+                  </ul>
+                  <h2>Tips Keamanan</h2>
+                  <ul>
+                    <li>Jangan bagikan kredensial admin</li>
+                    <li>Logout setelah selesai menggunakan sistem</li>
+                    <li>Periksa data sebelum update status</li>
+                    <li>Gunakan editor dokumen dengan hati-hati</li>
+                  </ul>
+                </div>
+
+                <!-- Admin Page 8: FAQ Admin -->
+                <div class="book-page-content" data-page="8">
+                  <h1><i class="fas fa-question-circle"></i> FAQ Admin</h1>
+                  <h3>Q: Bagaimana cara menambah admin baru?</h3>
+                  <p>Hubungi developer/IT untuk menambahkan user admin baru melalui database Supabase (tabel admin_users).</p>
+                  <h3>Q: Data Master berbeda dengan Data Pengajuan?</h3>
+                  <p>Ya. Data Master adalah sumber untuk Pembuatan PAK Integrasi. Data Pengajuan adalah data yang disubmit oleh pemohon melalui Formulir Pengajuan.</p>
+                  <h3>Q: Apakah editor dokumen bisa undo/redo?</h3>
+                  <p>Ya. Gunakan Ctrl+Z (undo) dan Ctrl+Y (redo). Atau klik tombol undo/redo di toolbar.</p>
+                  <h3>Q: Apakah autosave benar-benar menyimpan ke database?</h3>
+                  <p>Ya. Autosave menyimpan ke tabel dokumen_pak di Supabase setiap 2 detik setelah berhenti mengetik.</p>
+                  <h3>Q: Bagaimana cara restore versi dokumen lama?</h3>
+                  <p>Klik tombol "Versi" di editor, pilih versi yang ingin dipulihkan, lalu klik "Pulihkan".</p>
+                  <h3>Q: Mengapa dokumen PAK harus 4 halaman?</h3>
+                  <p>4 dokumen (Konvensional, Integrasi, Kebutuhan AK, PAK Integrasi) wajib ada sesuai format standar. Setiap dokumen = 1 halaman A4.</p>
+                  <div class="success-box" style="margin-top: 20px;">
+                    <i class="fas fa-check-circle"></i> Untuk bantuan lebih lanjut, hubungi Tim IT Dinas Kesehatan.
+                  </div>
+                </div>
+
+              </div>
+
+              <div class="book-footer" id="adminBookFooter"></div>
 
             </div>
           </div>

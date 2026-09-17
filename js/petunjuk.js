@@ -86,3 +86,75 @@ function initPetunjukPage() {
 function toggleCard() { /* deprecated, pakai book */ }
 function showHelpModal() { /* deprecated */ }
 function checkMobilePetunjuk() { /* deprecated */ }
+
+/* ============================================
+ * PANDUAN ADMIN (Buku terpisah)
+ * ============================================ */
+let adminBookCurrentPage = 1;
+let adminBookTotalPages = 8;
+
+function initPetunjukAdminPage() {
+  const pages = document.querySelectorAll('#petunjukAdminPage .book-page-content');
+  adminBookTotalPages = pages.length;
+  adminBookCurrentPage = 1;
+  showAdminBookPage(1);
+  generateAdminBookDots();
+
+  // Keyboard navigation
+  document.addEventListener('keydown', function (e) {
+    const adminActive = document.getElementById('petunjukAdminPage');
+    if (!adminActive || !adminActive.classList.contains('active')) return;
+
+    if (e.key === 'ArrowLeft') adminBookPrevPage();
+    else if (e.key === 'ArrowRight') adminBookNextPage();
+  });
+}
+
+function showAdminBookPage(pageNum) {
+  const pages = document.querySelectorAll('#petunjukAdminPage .book-page-content');
+  pages.forEach((page, idx) => {
+    page.classList.toggle('active', idx + 1 === pageNum);
+  });
+
+  const indicator = document.getElementById('adminBookPageIndicator');
+  if (indicator) indicator.textContent = pageNum + ' / ' + adminBookTotalPages;
+
+  const prevBtn = document.getElementById('adminBookPrevBtn');
+  const nextBtn = document.getElementById('adminBookNextBtn');
+  if (prevBtn) prevBtn.disabled = pageNum === 1;
+  if (nextBtn) nextBtn.disabled = pageNum === adminBookTotalPages;
+
+  document.querySelectorAll('#adminBookFooter .book-page-dot').forEach((dot, idx) => {
+    dot.classList.toggle('active', idx + 1 === pageNum);
+  });
+
+  const bookPages = document.querySelector('#petunjukAdminPage .book-pages');
+  if (bookPages) bookPages.scrollTop = 0;
+
+  adminBookCurrentPage = pageNum;
+}
+
+function adminBookNextPage() {
+  if (adminBookCurrentPage < adminBookTotalPages) {
+    showAdminBookPage(adminBookCurrentPage + 1);
+  }
+}
+
+function adminBookPrevPage() {
+  if (adminBookCurrentPage > 1) {
+    showAdminBookPage(adminBookCurrentPage - 1);
+  }
+}
+
+function generateAdminBookDots() {
+  const footer = document.getElementById('adminBookFooter');
+  if (!footer) return;
+  footer.innerHTML = '';
+
+  for (let i = 1; i <= adminBookTotalPages; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'book-page-dot' + (i === 1 ? ' active' : '');
+    dot.onclick = () => showAdminBookPage(i);
+    footer.appendChild(dot);
+  }
+}

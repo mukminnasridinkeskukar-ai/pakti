@@ -39,7 +39,8 @@ function navigateTo(page) {
     tracking: 'Pemantauan Proses',
     pakTerbit: 'Cek PAK Terbit',
     cekStatus: 'Cek Status Pengajuan',
-    petunjuk: 'Petunjuk Penggunaan',
+    petunjuk: 'Panduan Pemohon',
+    petunjukAdmin: 'Panduan Admin',
     dataMaster: 'Data Master (Sheet DATA)',
     pembuatanPAK: 'Pembuatan PAK Integrasi',
     admin: 'Kelola Data Pengajuan',
@@ -83,6 +84,8 @@ function navigateTo(page) {
     if (typeof loadPembuatanPAKData === 'function') loadPembuatanPAKData();
   } else if (page === 'petunjuk') {
     if (typeof initPetunjukPage === 'function') initPetunjukPage();
+  } else if (page === 'petunjukAdmin') {
+    if (typeof initPetunjukAdminPage === 'function') initPetunjukAdminPage();
   }
 }
 
