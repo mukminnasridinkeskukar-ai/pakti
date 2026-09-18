@@ -153,11 +153,35 @@ async function insertPengajuan(formData) {
     catatan_admin: '',
   };
 
-  const { data, error } = await supabaseClient
+  // Try insert with nomor_register
+  let { data, error } = await supabaseClient
     .from(TABLE_PENGAJUAN)
     .insert(row)
     .select()
     .single();
+
+  // Fallback: if nomor_register column doesn't exist, retry without it
+  if (error && error.code === 'PGRST204' && error.message.includes('nomor_register')) {
+    console.warn('[Supabase] Kolom nomor_register belum ada. Insert tanpa nomor_register.');
+    console.warn('[Supabase] Jalankan: supabase/migration_nomor_register.sql');
+
+    const rowWithoutRegister = { ...row };
+    delete rowWithoutRegister.nomor_register;
+
+    const result2 = await supabaseClient
+      .from(TABLE_PENGAJUAN)
+      .insert(rowWithoutRegister)
+      .select()
+      .single();
+
+    data = result2.data;
+    error = result2.error;
+
+    // Tambahkan nomor register ke result secara manual (untuk UI)
+    if (data) {
+      data.nomor_register = nomorRegister;
+    }
+  }
 
   if (error) throw error;
   return mapRowToUI(data);
