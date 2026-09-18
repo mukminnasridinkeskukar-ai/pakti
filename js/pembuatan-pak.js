@@ -429,17 +429,21 @@ function confirmPrintFromPreview() {
 }
 
 /**
- * Helper: Kop Surat (pakai image asli)
- * Image: assets/kop-surat.png (841x169 px, aspect ratio ~5:1)
- */
-/**
- * Helper: Kop Surat (text-based, sesuai referensi PDF)
+ * Helper: Kop Surat (text-based + logo image)
+ * Logo bisa diganti via editor (TinyMCE bisa edit gambar)
  */
 function getKopSurat(instansi) {
+  // Cek apakah ada logo custom di localStorage (dari upload di editor)
+  let logoSrc = 'assets/kop-surat.png';
+  try {
+    const customLogo = localStorage.getItem('pakti_logo_kop');
+    if (customLogo) logoSrc = customLogo;
+  } catch (e) {}
+
   return `
     <div class="kop-surat">
       <div class="kop-logo-text">
-        <div class="kop-logo-box">⚖</div>
+        <img src="${escapeHtml(logoSrc)}" alt="Logo" class="kop-logo-img" style="width: 24mm; height: 28mm; object-fit: contain; border: 1px solid #000;" />
       </div>
       <div class="kop-text-block">
         <div class="kop-line1">PEMERINTAH KABUPATEN KUTAI KARTANEGARA</div>

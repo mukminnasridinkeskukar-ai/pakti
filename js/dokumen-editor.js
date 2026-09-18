@@ -70,6 +70,9 @@ async function openDocumentEditor(pakData) {
           <i class="fas fa-circle-notch fa-spin"></i> Memuat...
         </span>
         <div class="editor-actions">
+          <button class="editor-btn" onclick="gantiLogoKop()" title="Ganti Logo Kop Surat" style="background: #8b5cf6; color: white;">
+            <i class="fas fa-image"></i> <span>Ganti Logo</span>
+          </button>
           <button class="editor-btn" onclick="openEditorSettings()" title="Pengaturan Halaman">
             <i class="fas fa-cog"></i> <span>Pengaturan</span>
           </button>
@@ -256,10 +259,14 @@ async function initTinyMCEEditor() {
   }
 
   // Inisialisasi TinyMCE dengan konfigurasi lengkap
-  // JANGAN set base_url manual - biarkan TinyMCE auto-detect dari script tag CDN
+  // WAJIB set base_url ke CDN - tanpa ini TinyMCE tidak bisa load plugin/skin
   tinymce.init({
     selector: '#tinyMCEEditor',
     license_key: 'gpl',
+
+    // Base URL WAJIB - tanpa ini plugin & skin tidak load dari CDN
+    base_url: 'https://cdn.jsdelivr.net/npm/tinymce@6.8.4',
+    suffix: '.min',
 
     height: '100%',
     width: '100%',
@@ -273,11 +280,11 @@ async function initTinyMCEEditor() {
     // Menubar NATIVE - semua menu berfungsi
     menubar: 'file edit view insert format table tools',
 
-    // Menu items - semua TERHUBUNG ke fungsi TinyMCE
+    // Menu items - HANYA native TinyMCE items (tidak ada custom)
     menu: {
       file: {
         title: 'File',
-        items: 'newdocument restoredraft | preview | exportpdf exportdocx | print',
+        items: 'newdocument restoredraft | preview | print',
       },
       edit: {
         title: 'Edit',
@@ -289,7 +296,7 @@ async function initTinyMCEEditor() {
       },
       insert: {
         title: 'Insert',
-        items: 'inserttable | image link media | charmap | insertdatetime | pagebreak hr | anchor',
+        items: 'image link media | charmap | insertdatetime | pagebreak hr | anchor',
       },
       format: {
         title: 'Format',
@@ -394,22 +401,9 @@ async function initTinyMCEEditor() {
     content_css: 'default',
     statusbar: false,
 
-    // Setup - custom buttons & shortcuts
+    // Setup - keyboard shortcuts
     setup: (editor) => {
       editorInstance = editor;
-
-      // Custom menu items untuk File menu
-      editor.ui.registry.addMenuItem('exportpdf', {
-        text: 'Export PDF',
-        icon: 'export',
-        onAction: () => exportDokumenPDF(),
-      });
-
-      editor.ui.registry.addMenuItem('exportdocx', {
-        text: 'Export DOCX',
-        icon: 'export',
-        onAction: () => exportDokumenDOCX(),
-      });
 
       // Keyboard shortcuts
       editor.addShortcut('ctrl+s', 'Simpan dokumen', () => {
@@ -1131,4 +1125,86 @@ function showCloseConfirmDialog() {
       if (e.target === modal) cleanup('cancel');
     });
   });
+}
+
+/* ============================================
+ * GANTI LOGO KOP SURAT
+ * ============================================
+ * Upload logo baru → simpan ke Supabase Storage
+ * → update localStorage sebagai cache
+ * → regenerate dokumen
+ * ============================================ */
+function gantiLogoKop() {
+  // Buat input file tersembunyi
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/png,image/jpeg,image/jpg';
+  input.style.display = 'none';
+
+  input.onchange = async function (event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Validasi
+    if (file.size > 2 * 1024 * 1024) {
+      toastError('Ukuran logo maksimal 2MB!');
+      return;
+    }
+
+    if (!['image/png', 'image/jpeg', 'image/jpg'].includes(file.type)) {
+      toastError('Format harus PNG, JPG, atau JPEG!');
+      return;
+    }
+
+    toastInfo('Mengupload logo...');
+
+    try {
+      let logoUrl;
+
+      // Coba upload ke Supabase Storage
+      if (isSupabaseReady()) {
+        const fileName = 'kop-surat/logo_' + Date.now() + '.' + file.name.split('.').pop();
+        const { error: uploadError } = await supabaseClient.storage
+          .from(STORAGE_BUCKET)
+          .upload(fileName, file, { cacheControl: '3600', upsert: false, contentType: file.type });
+
+        if (uploadError) throw uploadError;
+        const { data } = supabaseClient.storage.from(STORAGE_BUCKET).getPublicUrl(fileName);
+        logoUrl = data.publicUrl;
+      } else {
+        // Fallback: convert ke base64 (simpan di localStorage)
+        const reader = new FileReader();
+        logoUrl = await new Promise((resolve) => {
+          reader.onload = function (e) { resolve(e.target.result); };
+          reader.readAsDataURL(file);
+        });
+      }
+
+      // Simpan ke localStorage sebagai cache
+      localStorage.setItem('pakti_logo_kop', logoUrl);
+      console.log('[Editor] Logo kop surat diperbarui:', logoUrl);
+
+      toastSuccess('Logo berhasil diganti!');
+
+      // Update logo di dokumen editor jika ada
+      if (editorInstance) {
+        const imgs = editorInstance.dom.select('img.kop-logo-img');
+        imgs.forEach((img) => {
+          editorInstance.dom.setAttrib(img, 'src', logoUrl);
+        });
+      }
+
+      // Regenerate preview PAK jika ada
+      if (currentPAKData && typeof generatePAKIntegrasi === 'function') {
+        setTimeout(() => generatePAKIntegrasi(), 500);
+      }
+    } catch (err) {
+      console.error('[Editor] Gagal upload logo:', err);
+      toastError('Gagal upload logo: ' + (err.message || ''));
+    }
+  };
+
+  document.body.appendChild(input);
+  input.click();
+  document.body.removeChild(input);
 }
