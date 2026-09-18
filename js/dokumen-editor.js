@@ -904,8 +904,9 @@ function exportDokumenPDF() {
   }
 
   // Generate HTML untuk setiap halaman
+  // JANGAN set inline style font-size - biarkan CSS print yang handle
   const pagesHTML = contentParts.map((part) => {
-    return '<div class="pak-page" data-orientation="' + p.orientation + '" style="width: ' + pageWidth + '; height: ' + pageHeight + '; padding: ' + p.marginTop + 'mm ' + p.marginRight + 'mm ' + p.marginBottom + 'mm ' + p.marginLeft + 'mm; font-family: \'Times New Roman\', serif; font-size: 12pt; line-height: ' + p.lineHeight + '; box-sizing: border-box; overflow: hidden;">' + part + '</div>';
+    return '<div class="pak-page" data-orientation="' + p.orientation + '">' + part + '</div>';
   }).join('\n');
 
   const printWrapper = document.createElement('div');

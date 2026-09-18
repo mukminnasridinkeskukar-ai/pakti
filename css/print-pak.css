@@ -318,16 +318,15 @@
     min-height: 297mm;
     max-height: 297mm;
     margin: 0 !important;
-    padding: 12mm 14mm;
+    padding: 10mm 12mm; /* Sedikit lebih kecil dari preview */
     border: none !important;
     box-shadow: none !important;
     page-break-after: always;
     break-after: page;
     page-break-inside: avoid;
     break-inside: avoid;
-    overflow: hidden; /* Hidden di print mode - cegah halaman extra */
-    display: flex;
-    flex-direction: column;
+    overflow: hidden; /* Cegah halaman extra */
+    display: block; /* Ganti dari flex ke block untuk print */
   }
 
   /* Landscape variant */
@@ -350,9 +349,82 @@
     display: none !important;
   }
 
-  /* Kop surat */
+  /* KOLOM SURAT - kecilkan untuk print */
   body.printing-pak .kop-surat {
-    display: flex !important;
+    margin-bottom: 1mm !important;
+  }
+
+  body.printing-pak .kop-logo-img {
+    width: 20mm !important;
+    height: 22mm !important;
+  }
+
+  body.printing-pak .kop-line1 {
+    font-size: 10pt !important;
+  }
+
+  body.printing-pak .kop-line2 {
+    font-size: 12pt !important;
+  }
+
+  body.printing-pak .kop-line3 {
+    font-size: 7pt !important;
+  }
+
+  body.printing-pak .kop-line-separator {
+    margin-bottom: 2mm !important;
+  }
+
+  /* DOC TITLE - kecilkan */
+  body.printing-pak .doc-title-block {
+    margin-bottom: 2mm !important;
+  }
+
+  body.printing-pak .doc-title-main {
+    font-size: 10pt !important;
+  }
+
+  body.printing-pak .doc-title-num {
+    font-size: 9pt !important;
+  }
+
+  /* TABEL - kecilkan padding & font untuk print */
+  body.printing-pak .pak-table {
+    margin-bottom: 2mm !important;
+  }
+
+  body.printing-pak .pak-table .section-header {
+    padding: 2px 4px !important;
+    font-size: 8pt !important;
+  }
+
+  body.printing-pak .pak-table td,
+  body.printing-pak .pak-table th {
+    padding: 1px 3px !important;
+    font-size: 8pt !important;
+    line-height: 1.2 !important;
+  }
+
+  body.printing-pak .pak-table .ak-header-row th {
+    font-size: 7.5pt !important;
+  }
+
+  body.printing-pak .pak-table .col-ak {
+    width: 16mm !important;
+  }
+
+  /* TANDA TANGAN - kecilkan */
+  body.printing-pak .ttd-block {
+    margin-top: 4mm !important;
+    padding-left: 55% !important;
+  }
+
+  body.printing-pak .ttd-block p {
+    font-size: 8pt !important;
+  }
+
+  body.printing-pak .ttd-space {
+    height: 15mm !important;
   }
 
   /* Tabel - prevent row split */
