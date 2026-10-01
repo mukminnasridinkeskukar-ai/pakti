@@ -49,7 +49,9 @@ pakti-app/
 └── supabase/                    # SQL untuk setup database
     ├── schema.sql               # Buat tabel pengajuan_pak & admin_users + storage bucket
     ├── policies.sql             # Row Level Security (RLS) policies
-    └── seed.sql                 # Data awal: admin users + sample data
+    ├── seed.sql                 # Data awal: admin users + sample data
+    ├── migration_nomor_register.sql  # Migration: kolom nomor_register
+    └── migration_pak_integrasi_terbit.sql  # Migration: kolom PAK Integrasi Terbit
 ```
 
 ---
@@ -72,6 +74,16 @@ Buka **Supabase Dashboard → SQL Editor** dan run 3 file SQL secara berurutan:
 1. Copy-paste isi `supabase/schema.sql` → **Run**
 2. Copy-paste isi `supabase/policies.sql` → **Run**
 3. Copy-paste isi `supabase/seed.sql` → **Run** (untuk insert admin users)
+
+> ⚠️ **Database yang sudah berjalan tidak perlu di-install ulang.**
+> Untuk fitur **Dokumen PAK Integrasi Terbit** (menu Cek PAK Terbit), cukup jalankan
+> migration tambahan `supabase/migration_pak_integrasi_terbit.sql` — hanya menambah
+> kolom baru `pak_integrasi_terbit` (TEXT) pada tabel `pengajuan_pak`, tanpa mengubah
+> kolom/data yang sudah ada.
+>
+> **Cara mengisi link dokumen:** upload PDF ke Supabase Storage → copy public URL →
+> Table Editor `pengajuan_pak` → paste ke kolom `pak_integrasi_terbit` pada baris NIP
+> yang sesuai. Link otomatis tampil di menu Cek PAK Terbit dengan tombol Preview & Download.
 
 ### 3. Jalankan Aplikasi
 

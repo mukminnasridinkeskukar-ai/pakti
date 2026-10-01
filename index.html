@@ -1008,7 +1008,7 @@
                   <h3>Q: Apa yang dilakukan jika status "Perbaikan"?</h3>
                   <p>Buka menu "Cek Status Pengajuan", masukkan NIP, lalu klik "Update Data Perbaikan". Perbaiki data sesuai catatan admin.</p>
                   <h3>Q: Bagaimana cara mendapatkan PAK yang sudah terbit?</h3>
-                  <p>Buka menu "Cek PAK Terbit", masukkan NIK/NIP. Jika status "Terbit", dokumen dapat di-preview dan diunduh.</p>
+                  <p>Buka menu "Cek PAK Terbit", masukkan NIK/NIP. Jika status "Terbit", dokumen PAK Integrasi dapat di-preview dan diunduh.</p>
                   <h3>Q: Dokumen apa saja yang perlu diupload?</h3>
                   <ul>
                     <li>Foto berwarna 4x6 cm (JPG/PNG, maks 2MB)</li>
@@ -1861,6 +1861,27 @@
         </a>
         <button class="btn btn-warning" onclick="closeModal('documentModal')">
           <i class="fas fa-times"></i> Tutup
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================
+       MODAL: PREVIEW DOKUMEN PAK INTEGRASI TERBIT
+       ============================================ -->
+  <div class="modal-overlay" id="pakDocPreviewModal" onclick="if (event.target === this) closePakDocPreview()">
+    <div class="modal pak-doc-preview-modal">
+      <div class="modal-header">
+        <h3 class="modal-title"><i class="fas fa-file-lines"></i> <span id="pakDocPreviewTitle">Preview Dokumen</span></h3>
+        <button class="modal-close" onclick="closePakDocPreview()"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body pak-doc-preview-body" id="pakDocPreviewBody"></div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closePakDocPreview()">
+          <i class="fas fa-times"></i> Tutup
+        </button>
+        <button class="btn btn-primary" id="pakDocPreviewDownload">
+          <i class="fas fa-download"></i> Download
         </button>
       </div>
     </div>

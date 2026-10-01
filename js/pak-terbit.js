@@ -69,44 +69,14 @@ async function searchPAKTerbit() {
 
 /**
  * Render PAK Terbit data card
+ * NOTE: Dokumen & foto lama (Foto 4x6, SK Pangkat, SK Jabfung, PAK Konvensional)
+ * tidak lagi ditampilkan. Yang ditampilkan hanya dokumen "PAK Integrasi Terbit"
+ * (kolom pak_integrasi_terbit, link diisi manual oleh admin via Supabase).
  */
 function renderPakTerbitCard(data) {
   const resultContainer = document.getElementById('pakTerbitResult');
   if (!resultContainer) return;
 
-  // Dokumen list
-  const dokumenList = [
-    {
-      key: 'Dok_Foto_4x6',
-      label: 'Foto Berwarna 4x6 cm',
-      icon: 'fa-image',
-      type: 'image',
-      url: data['Dok_Foto_4x6'] || '',
-    },
-    {
-      key: 'Dok_SK_Pangkat_2022_2023',
-      label: 'SK Pangkat Terakhir 2022/2023',
-      icon: 'fa-file-pdf',
-      type: 'pdf',
-      url: data['Dok_SK_Pangkat_2022_2023'] || '',
-    },
-    {
-      key: 'Dok_SK_Jabfung_2022_2023',
-      label: 'SK Jabatan Fungsional 2022/2023',
-      icon: 'fa-file-pdf',
-      type: 'pdf',
-      url: data['Dok_SK_Jabfung_2022_2023'] || '',
-    },
-    {
-      key: 'Dok_PAK_Konvensional_s_d_2022',
-      label: 'PAK Konvensional s/d 2022',
-      icon: 'fa-file-contract',
-      type: 'pdf',
-      url: data['Dok_PAK_Konvensional_s_d_2022'] || '',
-    },
-  ];
-
-  const driveLink = data['Upload Dokumen (Drive Link)'] || '';
   const updateTerakhir = data['Update Terakhir'] || data['Timestamp'] || '-';
   const formattedDate = formatDate(updateTerakhir);
 
@@ -139,53 +109,44 @@ function renderPakTerbitCard(data) {
     }
   }
 
-  // Build documents HTML
+  // Build "PAK Integrasi Terbit" document HTML
+  const integrasiUrl = data['PAK_Integrasi_Terbit'] || '';
+  const status = data['Status'] || 'Menunggu';
   let documentsHTML = '';
-  let hasAnyDocument = false;
 
-  for (const doc of dokumenList) {
-    if (doc.url) {
-      hasAnyDocument = true;
-      const isImage = doc.type === 'image';
-      const previewBtn = `<button class="btn-preview-pak" onclick="previewPAKDocument('${escapeHtml(doc.url)}', '${doc.type}')">
-          <i class="fas fa-eye"></i> ${isImage ? 'Preview' : 'Lihat'}
-        </button>`;
-
-      documentsHTML += `
-        <div class="pak-doc-item">
-          <div class="pak-doc-header">
-            <div class="pak-doc-title">
-              <i class="fas ${doc.icon}"></i> ${doc.label}
-            </div>
-            <div class="pak-doc-actions">
-              ${previewBtn}
-              <a href="${escapeHtml(doc.url)}" target="_blank" class="btn-download-pak" download>
-                <i class="fas fa-download"></i> Download
-              </a>
-            </div>
-          </div>
-          <div class="pak-doc-filename">
-            <i class="fas fa-paperclip"></i> ${extractFileName(doc.url)}
-          </div>
-          ${
-            isImage
-              ? `
-            <div class="pak-doc-thumbnail" onclick="previewPAKDocument('${escapeHtml(doc.url)}', 'image')">
-              <img src="${escapeHtml(doc.url)}" alt="${doc.label}" loading="lazy" onerror="this.parentElement.innerHTML='<i class=\\'fas fa-image\\' style=\\'font-size:48px;color:#ccc;\\'></i>'">
-            </div>
-          `
-              : ''
-          }
-        </div>
-      `;
-    }
-  }
-
-  if (!hasAnyDocument) {
+  if (integrasiUrl) {
     documentsHTML = `
-      <div class="pak-doc-no-file" style="padding: 20px; text-align: center; color: #666;">
-        <i class="fas fa-folder-open" style="font-size: 32px; margin-bottom: 10px; display: block;"></i>
-        Belum ada dokumen yang diupload
+      <div class="pak-doc-item pak-integrasi-doc">
+        <div class="pak-doc-header">
+          <div class="pak-doc-title">
+            <i class="fas fa-file-pdf"></i> Dokumen PAK Integrasi Terbit
+          </div>
+          <div class="pak-doc-actions">
+            <button class="btn-preview-pak" onclick="previewPAKIntegrasiDoc('${encodeURIComponent(integrasiUrl)}')">
+              <i class="fas fa-eye"></i> Preview
+            </button>
+            <button class="btn-download-pak" onclick="downloadPAKIntegrasiDoc('${encodeURIComponent(integrasiUrl)}')">
+              <i class="fas fa-download"></i> Download
+            </button>
+          </div>
+        </div>
+        <div class="pak-doc-filename">
+          <i class="fas fa-paperclip"></i> ${extractFileName(integrasiUrl)}
+        </div>
+      </div>
+    `;
+  } else if (status === 'Terbit') {
+    documentsHTML = `
+      <div class="pak-doc-no-file">
+        <i class="fas fa-folder-open"></i>
+        Dokumen PAK Integrasi belum diunggah oleh admin.
+      </div>
+    `;
+  } else {
+    documentsHTML = `
+      <div class="pak-doc-no-file">
+        <i class="fas fa-hourglass-half"></i>
+        Dokumen PAK Integrasi akan tersedia setelah status pengajuan "Terbit".
       </div>
     `;
   }
@@ -197,8 +158,8 @@ function renderPakTerbitCard(data) {
           <div class="pak-card-name">${escapeHtml(data['Nama Lengkap dengan Gelar'] || '-')}</div>
           <div class="pak-card-nip"><i class="fas fa-id-badge"></i> NIP: ${escapeHtml(data['NIP'] || '-')}</div>
         </div>
-        <div class="pak-card-status-badge ${data['Status'] === 'Terbit' ? 'status-terbit' : ''}">
-          <i class="fas fa-${data['Status'] === 'Terbit' ? 'check-circle' : 'clock'}"></i> ${data['Status'] || 'Menunggu'}
+        <div class="pak-card-status-badge ${status === 'Terbit' ? 'status-terbit' : ''}">
+          <i class="fas fa-${status === 'Terbit' ? 'check-circle' : 'clock'}"></i> ${status}
         </div>
       </div>
 
@@ -208,7 +169,7 @@ function renderPakTerbitCard(data) {
 
           <div class="pak-info-item">
             <span class="pak-info-label"><i class="fas fa-info-circle"></i> Status</span>
-            <span class="pak-info-value">${getStatusBadge(data['Status'] || 'Menunggu')}</span>
+            <span class="pak-info-value">${getStatusBadge(status)}</span>
           </div>
           <div class="pak-info-item">
             <span class="pak-info-label"><i class="fas fa-clock"></i> Update Terakhir</span>
@@ -222,14 +183,7 @@ function renderPakTerbitCard(data) {
 
         <div class="pak-card-documents">
           <div class="pak-doc-section-header">
-            <i class="fas fa-folder-open"></i> Dokumen Pengajuan
-            ${
-              driveLink
-                ? `<a href="${escapeHtml(driveLink)}" target="_blank" class="btn-link-drive">
-                <i class="fas fa-external-link-alt"></i> Buka Folder
-              </a>`
-                : ''
-            }
+            <i class="fas fa-file-signature"></i> Dokumen PAK Integrasi Terbit
           </div>
           <div class="pak-doc-list">
             ${documentsHTML}
@@ -251,27 +205,127 @@ function showPakTerbitEmpty() {
 }
 
 /**
- * Preview PAK document
+ * Decode argumen URL yang di-encode via encodeURIComponent
+ * (untuk onclick attribute agar aman dari karakter kutip)
  */
-function previewPAKDocument(docUrl, docType) {
+function decodeDocUrlArg(encoded) {
+  try {
+    return decodeURIComponent(encoded);
+  } catch (e) {
+    return encoded;
+  }
+}
+
+/**
+ * Deteksi tipe dokumen dari URL (pdf / image / other)
+ */
+function detectDocTypeFromUrl(url) {
+  const lowerUrl = (url || '').toLowerCase().split('?')[0];
+  if (/\.(jpg|jpeg|png|gif|webp|bmp)$/.test(lowerUrl)) return 'image';
+  if (/\.pdf$/.test(lowerUrl)) return 'pdf';
+  return 'other';
+}
+
+/**
+ * Preview dokumen PAK Integrasi Terbit
+ * - PDF      : tampil di modal preview (iframe bawaan browser)
+ * - Gambar   : tampil di modal preview (img)
+ * - Lainnya  : buka di tab baru
+ */
+function previewPAKIntegrasiDoc(docUrl) {
+  docUrl = decodeDocUrlArg(docUrl);
   if (!docUrl) {
     toastError('Dokumen tidak tersedia');
     return;
   }
 
-  if (!docType) {
-    const lowerUrl = docUrl.toLowerCase();
-    if (lowerUrl.includes('.jpg') || lowerUrl.includes('.jpeg') || lowerUrl.includes('.png')) {
-      docType = 'image';
-    } else {
-      docType = 'pdf';
-    }
+  const docType = detectDocTypeFromUrl(docUrl);
+  const modal = document.getElementById('pakDocPreviewModal');
+  const titleEl = document.getElementById('pakDocPreviewTitle');
+  const bodyEl = document.getElementById('pakDocPreviewBody');
+  const downloadBtn = document.getElementById('pakDocPreviewDownload');
+
+  if (!modal || !bodyEl) {
+    // Fallback: buka di tab baru
+    window.open(docUrl, '_blank');
+    return;
   }
 
+  // Simpan URL untuk tombol download di modal
+  modal.dataset.docUrl = docUrl;
+  if (downloadBtn) {
+    downloadBtn.setAttribute('onclick', `downloadPAKIntegrasiDoc('${encodeURIComponent(docUrl)}')`);
+  }
+  if (titleEl) {
+    titleEl.textContent = extractFileName(docUrl) || 'Preview Dokumen';
+  }
+
+  // Render isi preview sesuai tipe
   if (docType === 'image') {
-    openLightbox(docUrl);
+    bodyEl.innerHTML = `
+      <div class="pak-doc-preview-image-wrap">
+        <img src="${escapeHtml(docUrl)}" alt="Preview Dokumen" onerror="this.parentElement.innerHTML='<div class=\\'pak-doc-preview-fallback\\'><i class=\\'fas fa-triangle-exclamation\\'></i><p>Gambar tidak dapat dimuat.</p></div>'">
+      </div>
+    `;
   } else {
+    // PDF & tipe lain -> iframe (browser punya viewer PDF bawaan)
+    bodyEl.innerHTML = `
+      <iframe class="pak-doc-preview-iframe" src="${escapeHtml(docUrl)}" title="Preview Dokumen"></iframe>
+    `;
+  }
+
+  modal.classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+/**
+ * Tutup modal preview dokumen PAK Integrasi
+ */
+function closePakDocPreview() {
+  const modal = document.getElementById('pakDocPreviewModal');
+  const bodyEl = document.getElementById('pakDocPreviewBody');
+  if (bodyEl) bodyEl.innerHTML = ''; // stop loading iframe/img
+  if (modal) {
+    modal.classList.remove('active');
+    delete modal.dataset.docUrl;
+  }
+  document.body.style.overflow = '';
+}
+
+/**
+ * Download dokumen PAK Integrasi Terbit
+ * Menggunakan fetch -> blob agar file langsung terunduh
+ * (atribut `download` tidak berlaku untuk cross-origin URL).
+ * Jika fetch gagal (CORS/jaringan), fallback: buka tab baru.
+ */
+async function downloadPAKIntegrasiDoc(docUrl) {
+  docUrl = decodeDocUrlArg(docUrl);
+  if (!docUrl) {
+    toastError('Dokumen tidak tersedia');
+    return;
+  }
+
+  toastInfo('Menyiapkan unduhan...');
+
+  try {
+    const response = await fetch(docUrl, { mode: 'cors' });
+    if (!response.ok) throw new Error('HTTP ' + response.status);
+
+    const blob = await response.blob();
+    const blobUrl = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = extractFileName(docUrl) || 'dokumen-pak-integrasi';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
+
+    toastSuccess('Dokumen berhasil diunduh');
+  } catch (error) {
+    console.warn('[PAK Terbit] Blob download gagal, fallback ke tab baru:', error);
     window.open(docUrl, '_blank');
-    toastInfo('Membuka dokumen PDF...');
+    toastInfo('Dokumen dibuka di tab baru. Klik kanan -> "Save as" untuk menyimpan.');
   }
 }

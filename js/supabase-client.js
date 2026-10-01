@@ -54,6 +54,9 @@ function mapRowToUI(row) {
     'Dok_PAK_Konvensional_s_d_2022': row.dok_pak_konvensional_url || '',
     'Upload Dokumen (Drive Link)': row.dok_foto_url || '',
 
+    // Dokumen PAK Integrasi Terbit (link diisi manual oleh admin via Supabase Dashboard)
+    'PAK_Integrasi_Terbit': row.pak_integrasi_terbit || '',
+
     // ID untuk operasi update/delete
     _id: row.id,
     _raw: row,
