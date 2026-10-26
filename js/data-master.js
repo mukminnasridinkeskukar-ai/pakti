@@ -13,6 +13,23 @@ let dataMasterCurrentPage = 1;
 let dataMasterEditId = null;
 let dataMasterDeleteId = null;
 
+// Cache data pengajuan (pengajuan_pak) untuk autofill & tarik data
+let pengajuanCacheForDM = null;
+
+/**
+ * Pastikan cache data pengajuan tersedia (dipakai form Data Master)
+ * Sumber: tabel pengajuan_pak (data yang dikirim pegawai via Formulir Pengajuan)
+ */
+async function ensurePengajuanCacheForDM(force = false) {
+  if (!isSupabaseReady()) {
+    throw new Error('Supabase belum dikonfigurasi');
+  }
+  if (pengajuanCacheForDM === null || force) {
+    pengajuanCacheForDM = await fetchAllPengajuan();
+  }
+  return pengajuanCacheForDM;
+}
+
 /**
  * Load data master dari Supabase
  */
@@ -25,7 +42,7 @@ async function loadDataMaster() {
   const tbody = document.getElementById('dataMasterTableBody');
   if (tbody) {
     tbody.innerHTML =
-      '<tr><td colspan="6" style="text-align: center; padding: 30px;"><span class="loading-spinner"></span> Memuat data...</td></tr>';
+      '<tr><td colspan="8" style="text-align: center; padding: 30px;"><span class="loading-spinner"></span> Memuat data...</td></tr>';
   }
 
   try {
@@ -38,7 +55,7 @@ async function loadDataMaster() {
     console.error('[Data Master] Load error:', error);
     toastError('Gagal memuat: ' + (error.message || ''));
     if (tbody) {
-      tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 30px; color: var(--danger);">
+      tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 30px; color: var(--danger);">
         <i class="fas fa-exclamation-triangle" style="font-size: 32px;"></i><br><br>
         Gagal memuat data: ${escapeHtml(error.message || '')}</td></tr>`;
     }
@@ -82,7 +99,7 @@ function renderDataMasterPage() {
   if (!tbody) return;
 
   if (pageData.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 40px;">
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 40px;">
       <i class="fas fa-inbox" style="font-size: 40px; color: var(--text-light); margin-bottom: 12px;"></i>
       <p>Tidak ada data</p>
     </td></tr>`;
@@ -107,6 +124,8 @@ function renderDataMasterPage() {
           <td>${rowIndex}</td>
           <td><strong>${escapeHtml(row['Nama Lengkap dengan Gelar'] || '-')}</strong></td>
           <td>${escapeHtml(row['NIP'] || '-')}</td>
+          <td>${escapeHtml(row['Pangkat/Gol'] || '-')}</td>
+          <td>${escapeHtml(row['Jenis JF'] || '-')}</td>
           <td>${escapeHtml(row['Satuan Kerja'] || '-')}</td>
           <td><strong>${totalAK.toFixed(2)}</strong></td>
           <td>
@@ -213,6 +232,21 @@ function openDataMasterModal(editId) {
       <div class="modal-body">
         <form id="dataMasterForm" onsubmit="submitDataMasterForm(event)">
           <input type="hidden" id="dmEditId" value="${setVal(editId)}">
+
+          <!-- Autofill dari Data Pengajuan -->
+          <div style="background: #f0f9ff; padding: 14px; border-radius: 8px; margin-bottom: 18px; border-left: 4px solid var(--primary-blue);">
+            <label class="form-label" style="margin-bottom: 6px;">
+              <i class="fas fa-magic"></i> Ambil Otomatis dari Data Pengajuan
+            </label>
+            <select class="form-select" id="dmAutoFillPengajuan" onchange="autoFillDataMasterFromPengajuan(this.value)" style="width: 100%;">
+              <option value="">-- Pilih data pengajuan untuk mengisi otomatis (NIP - Nama) --</option>
+            </select>
+            <p style="margin: 8px 0 0 0; font-size: 0.75rem; color: var(--text-medium);">
+              <i class="fas fa-info-circle"></i> Semua isian data perorangan akan terisi otomatis dari tabel
+              <code>pengajuan_pak</code> (data pengajuan yang dikirim pegawai). Angka Kredit tetap diisi manual.
+            </p>
+            <div id="dmAutoFillInfo" style="display: none; margin-top: 8px; font-size: 0.78rem; color: var(--success); font-weight: 600;"></div>
+          </div>
 
           <h4 style="color: var(--government-blue); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid var(--primary-blue);">
             <i class="fas fa-user"></i> Keterangan Perorangan
@@ -393,6 +427,116 @@ function openDataMasterModal(editId) {
   modal.addEventListener('click', function (e) {
     if (e.target === modal) closeDataMasterModal();
   });
+
+  // Isi dropdown autofill dari data pengajuan (pengajuan_pak)
+  populateDmAutoFillPengajuan();
+}
+
+/**
+ * Isi dropdown "Ambil Otomatis dari Data Pengajuan" pada modal Data Master
+ * Daftar diambil dari tabel pengajuan_pak (cache 1x per sesi)
+ */
+async function populateDmAutoFillPengajuan() {
+  const select = document.getElementById('dmAutoFillPengajuan');
+  if (!select) return;
+
+  select.innerHTML = '<option value="">Memuat data pengajuan...</option>';
+
+  try {
+    const list = await ensurePengajuanCacheForDM();
+
+    if (!list || list.length === 0) {
+      select.innerHTML = '<option value="">-- Belum ada data pengajuan --</option>';
+      return;
+    }
+
+    // Urutkan nama A-Z agar mudah dipilih
+    const sorted = [...list].sort((a, b) =>
+      String(a['Nama Lengkap dengan Gelar'] || '').localeCompare(String(b['Nama Lengkap dengan Gelar'] || ''))
+    );
+
+    // Tandai NIP yang sudah ada di Data Master
+    const existingNips = new Set(dataMasterAll.map((r) => String(r.NIP || '')).filter(Boolean));
+
+    select.innerHTML =
+      '<option value="">-- Pilih data pengajuan untuk mengisi otomatis (NIP - Nama) --</option>' +
+      sorted
+        .map((row) => {
+          const nip = String(row.NIP || '');
+          const nama = row['Nama Lengkap dengan Gelar'] || '-';
+          const satker = row['Satuan Kerja'] || '-';
+          const exists = nip && existingNips.has(nip);
+          const suffix = exists ? ' [sudah ada di Data Master]' : '';
+          return `<option value="${escapeHtml(nip)}">${escapeHtml(nip || '-')} - ${escapeHtml(nama)} (${escapeHtml(satker)})${suffix}</option>`;
+        })
+        .join('');
+  } catch (error) {
+    console.error('[Data Master] Gagal memuat data pengajuan untuk autofill:', error);
+    select.innerHTML = '<option value="">-- Gagal memuat data pengajuan --</option>';
+  }
+}
+
+/**
+ * Autofill semua isian data perorangan dari record pengajuan yang dipilih
+ * (pemetaan field pengajuan_pak -> form data_master)
+ */
+function autoFillDataMasterFromPengajuan(nip) {
+  if (!nip) return; // user memilih placeholder, jangan reset form
+
+  const list = pengajuanCacheForDM || [];
+  const src = list.find((r) => String(r.NIP) === String(nip));
+  if (!src) {
+    toastError('Data pengajuan tidak ditemukan. Coba buka ulang modal.');
+    return;
+  }
+
+  const raw = src._raw || {};
+  const setVal = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.value = val != null ? String(val) : '';
+  };
+
+  // Split "pangkat_gol" (format: "Penata - III/c Ahli Muda") -> pangkat + golongan
+  let pangkat = raw.pangkat || '';
+  let golongan = raw.golongan || '';
+  if ((!pangkat || !golongan) && raw.pangkat_gol) {
+    const idx = String(raw.pangkat_gol).indexOf(' - ');
+    if (idx > 0) {
+      pangkat = String(raw.pangkat_gol).slice(0, idx).trim();
+      golongan = String(raw.pangkat_gol).slice(idx + 3).trim();
+    } else {
+      golongan = String(raw.pangkat_gol).trim();
+    }
+  }
+
+  // Identitas
+  setVal('dmNip', raw.nip || src.NIP || '');
+  setVal('dmNama', raw.nama || src['Nama Lengkap dengan Gelar'] || '');
+  setVal('dmKarpeg', raw.no_karpeg || src['No Karpeg'] || '');
+  setVal('dmTempatLahir', raw.tempat_lahir || '');
+  setVal('dmTanggalLahir', raw.tanggal_lahir || '');
+  setVal('dmPendidikan', raw.pendidikan || src.Pendidikan || '');
+  setVal('dmJenisKelamin', raw.jenis_kelamin || src['Jenis Kelamin'] || '');
+  setVal('dmPangkat', pangkat);
+  setVal('dmGolongan', golongan);
+  setVal('dmTmtPangkat', raw.tmt_pangkat || '');
+  setVal('dmJabatanJf', raw.jenis_jf || raw.jabatan_jf || src['Jenis JF'] || '');
+  setVal('dmTmtJf', raw.tmt_jf || '');
+  setVal('dmMasaKerja', raw.masa_kerja_gol || src['Masa Kerja Gol'] || '');
+  setVal('dmUnitKerja', raw.satuan_kerja || raw.unit_kerja || src['Satuan Kerja'] || '');
+  setVal('dmInstansi', raw.instansi || 'Dinas Kesehatan Kab. Kutai Kartanegara');
+
+  // Email & kontak dari pengajuan (informatif, tidak tersimpan di data_master)
+  const infoEl = document.getElementById('dmAutoFillInfo');
+  if (infoEl) {
+    infoEl.innerHTML =
+      '<i class="fas fa-check-circle"></i> Data berhasil diambil dari pengajuan' +
+      (raw.email ? ' &mdash; ' + escapeHtml(raw.email) : '') +
+      (raw.no_hp ? ' &bull; ' + escapeHtml(raw.no_hp) : '');
+    infoEl.style.display = 'block';
+  }
+
+  toastSuccess('Data pengajuan berhasil diambil. Silakan lengkapi Angka Kredit.');
 }
 
 function closeDataMasterModal() {
@@ -1318,4 +1462,302 @@ function updateDmCsvProgress(percent, text) {
   if (bar) bar.style.width = percent + '%';
   if (percentEl) percentEl.textContent = percent + '%';
   if (textEl) textEl.textContent = text;
+}
+
+/* ============================================
+ * TARIK DATA PENGAJUAN -> DATA MASTER
+ * ============================================
+ * Import massal data dari tabel pengajuan_pak (Formulir Pengajuan publik)
+ * ke tabel data_master (Sheet DATA). Field perorangan terisi otomatis,
+ * field Angka Kredit diisi 0 dan dapat dilengkapi admin kemudian.
+ * ============================================ */
+
+let tarikPengajuanSelection = new Set();
+
+/**
+ * Buka modal "Tarik Data Pengajuan"
+ * Menampilkan seluruh data pengajuan (pengajuan_pak) dengan status
+ * import (sudah ada / belum ada di data_master).
+ */
+async function openTarikPengajuanModal() {
+  let modal = document.getElementById('tarikPengajuanModal');
+  if (modal) modal.remove();
+
+  modal = document.createElement('div');
+  modal.id = 'tarikPengajuanModal';
+  modal.className = 'modal-overlay active';
+  modal.style.cssText = 'display: flex;';
+
+  modal.innerHTML = `
+    <div class="modal" style="max-width: 860px; max-height: 90vh; overflow-y: auto;">
+      <div class="modal-header">
+        <h3 class="modal-title"><i class="fas fa-download"></i> Tarik Data Pengajuan &rarr; Data Master</h3>
+        <button class="modal-close" onclick="closeTarikPengajuanModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div style="background: #f0f9ff; padding: 12px; border-radius: 8px; margin-bottom: 16px; border-left: 4px solid var(--primary-blue); font-size: 0.82rem;">
+          <strong><i class="fas fa-info-circle"></i> Cara kerja:</strong>
+          Pilih data pengajuan yang ingin ditarik, lalu klik "Import ke Data Master".
+          Field perorangan (NIP, Nama, Karpeg, TTL, Pendidikan, Pangkat/Gol, Jabatan, Masa Kerja, Satuan Kerja)
+          otomatis terisi dari tabel <code>pengajuan_pak</code>. Angka Kredit (AK) diisi 0 &mdash; silakan lengkapi
+          melalui menu Edit Data Master.
+        </div>
+        <div id="tarikPengajuanList">
+          <div style="text-align: center; padding: 30px;"><span class="loading-spinner"></span> Memuat data pengajuan...</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" id="tarikPengajuanImportBtn" onclick="importPengajuanToDataMaster()" disabled>
+          <i class="fas fa-file-import"></i> Import yang Dipilih (0)
+        </button>
+        <button class="btn btn-warning" onclick="closeTarikPengajuanModal()">
+          <i class="fas fa-times"></i> Tutup
+        </button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  modal.addEventListener('click', function (e) {
+    if (e.target === modal) closeTarikPengajuanModal();
+  });
+
+  tarikPengajuanSelection = new Set();
+  await renderTarikPengajuanList();
+}
+
+function closeTarikPengajuanModal() {
+  const modal = document.getElementById('tarikPengajuanModal');
+  if (modal) modal.remove();
+  tarikPengajuanSelection = new Set();
+}
+
+/**
+ * Render daftar pengajuan pada modal Tarik Data
+ */
+async function renderTarikPengajuanList() {
+  const container = document.getElementById('tarikPengajuanList');
+  if (!container) return;
+
+  try {
+    const list = await ensurePengajuanCacheForDM(true);
+
+    if (!list || list.length === 0) {
+      container.innerHTML =
+        '<div style="text-align: center; padding: 30px; color: var(--text-light);">' +
+        '<i class="fas fa-inbox" style="font-size: 40px; margin-bottom: 12px;"></i>' +
+        '<p>Belum ada data pengajuan di tabel pengajuan_pak.</p></div>';
+      return;
+    }
+
+    const existingNips = new Set(dataMasterAll.map((r) => String(r.NIP || '')).filter(Boolean));
+
+    const rowsHTML = list
+      .map((row) => {
+        const nip = String(row.NIP || '');
+        const exists = nip && existingNips.has(nip);
+        const raw = row._raw || {};
+        const pangkatGol = raw.pangkat_gol || row['Pangkat/Gol'] || '-';
+        const jabatan = raw.jenis_jf || row['Jenis JF'] || '-';
+        const status = row.Status || 'Menunggu';
+        const checked = tarikPengajuanSelection.has(nip);
+        const disabled = exists ? 'disabled' : '';
+
+        return `
+          <tr style="border-bottom: 1px solid var(--border-color);">
+            <td style="padding: 8px; text-align: center;">
+              <input type="checkbox" ${checked ? 'checked' : ''} ${disabled}
+                     onchange="toggleTarikPengajuanSelect('${escapeHtml(nip)}', this.checked)"
+                     title="${exists ? 'Sudah ada di Data Master' : 'Pilih untuk import'}">
+            </td>
+            <td style="padding: 8px;">${escapeHtml(nip || '-')}</td>
+            <td style="padding: 8px;"><strong>${escapeHtml(row['Nama Lengkap dengan Gelar'] || '-')}</strong></td>
+            <td style="padding: 8px;">${escapeHtml(pangkatGol)}</td>
+            <td style="padding: 8px;">${escapeHtml(jabatan)}</td>
+            <td style="padding: 8px;">${escapeHtml(row['Satuan Kerja'] || '-')}</td>
+            <td style="padding: 8px;">${getStatusBadge(status)}</td>
+            <td style="padding: 8px; text-align: center;">
+              ${exists
+                ? '<span style="color: var(--success); font-size: 0.78rem;"><i class="fas fa-check-circle"></i> Sudah ada</span>'
+                : '<span style="color: var(--warning); font-size: 0.78rem;"><i class="fas fa-plus-circle"></i> Belum ditarik</span>'}
+            </td>
+          </tr>
+        `;
+      })
+      .join('');
+
+    const totalNew = list.filter((r) => {
+      const nip = String(r.NIP || '');
+      return nip && !existingNips.has(nip);
+    }).length;
+
+    container.innerHTML = `
+      <div style="margin-bottom: 12px; font-size: 0.82rem; color: var(--text-medium);">
+        <i class="fas fa-database"></i> Total data pengajuan: <strong>${list.length}</strong>
+        &bull; Belum ada di Data Master: <strong style="color: var(--warning);">${totalNew}</strong>
+        &bull; Sudah ada: <strong style="color: var(--success);">${list.length - totalNew}</strong>
+      </div>
+      <div style="max-height: 320px; overflow: auto; border: 1px solid var(--border-color); border-radius: 8px;">
+        <table style="min-width: 100%; font-size: 0.78rem;">
+          <thead>
+            <tr style="background: #f1f5f9;">
+              <th style="padding: 8px; text-align: center;">&check;</th>
+              <th style="padding: 8px; text-align: left;">NIP</th>
+              <th style="padding: 8px; text-align: left;">Nama</th>
+              <th style="padding: 8px; text-align: left;">Pangkat/Gol</th>
+              <th style="padding: 8px; text-align: left;">Jabatan JF</th>
+              <th style="padding: 8px; text-align: left;">Satuan Kerja</th>
+              <th style="padding: 8px; text-align: left;">Status</th>
+              <th style="padding: 8px; text-align: center;">Import</th>
+            </tr>
+          </thead>
+          <tbody>${rowsHTML}</tbody>
+        </table>
+      </div>
+    `;
+
+    updateTarikPengajuanImportBtn();
+  } catch (error) {
+    console.error('[Data Master] Gagal memuat daftar pengajuan:', error);
+    container.innerHTML =
+      '<div style="text-align: center; padding: 30px; color: var(--danger);">' +
+      '<i class="fas fa-exclamation-triangle" style="font-size: 40px; margin-bottom: 12px;"></i>' +
+      '<p>Gagal memuat: ' + escapeHtml(error.message || '') + '</p></div>';
+  }
+}
+
+function toggleTarikPengajuanSelect(nip, checked) {
+  if (!nip) return;
+  if (checked) tarikPengajuanSelection.add(nip);
+  else tarikPengajuanSelection.delete(nip);
+  updateTarikPengajuanImportBtn();
+}
+
+function updateTarikPengajuanImportBtn() {
+  const btn = document.getElementById('tarikPengajuanImportBtn');
+  if (!btn) return;
+  const count = tarikPengajuanSelection.size;
+  btn.disabled = count === 0;
+  btn.innerHTML = '<i class="fas fa-file-import"></i> Import yang Dipilih (' + count + ')';
+}
+
+/**
+ * Import data pengajuan yang dipilih ke tabel data_master
+ * (field perorangan dari pengajuan_pak, AK = 0)
+ */
+async function importPengajuanToDataMaster() {
+  if (tarikPengajuanSelection.size === 0) {
+    toastWarning('Pilih minimal 1 data pengajuan terlebih dahulu.');
+    return;
+  }
+
+  if (!isSupabaseReady()) {
+    toastError('Supabase belum dikonfigurasi.');
+    return;
+  }
+
+  const list = pengajuanCacheForDM || [];
+  const selected = list.filter((r) => tarikPengajuanSelection.has(String(r.NIP || '')));
+
+  if (selected.length === 0) {
+    toastError('Data terpilih tidak ditemukan.');
+    return;
+  }
+
+  const confirmed = await confirmDialog(
+    'Import ' + selected.length + ' data pengajuan ke Data Master?\n\n' +
+    'Field perorangan akan diambil otomatis dari pengajuan_pak.\n' +
+    'Angka Kredit diisi 0 (lengkapi via Edit Data Master).'
+  );
+  if (!confirmed) return;
+
+  const btn = document.getElementById('tarikPengajuanImportBtn');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading-spinner"></span> Mengimport...';
+  }
+
+  let successCount = 0;
+  let failCount = 0;
+  const errors = [];
+
+  for (let i = 0; i < selected.length; i++) {
+    const src = selected[i];
+    const raw = src._raw || {};
+
+    // Split pangkat_gol -> pangkat + golongan
+    let pangkat = raw.pangkat || '';
+    let golongan = raw.golongan || '';
+    if ((!pangkat || !golongan) && raw.pangkat_gol) {
+      const idx = String(raw.pangkat_gol).indexOf(' - ');
+      if (idx > 0) {
+        pangkat = String(raw.pangkat_gol).slice(0, idx).trim();
+        golongan = String(raw.pangkat_gol).slice(idx + 3).trim();
+      } else {
+        golongan = String(raw.pangkat_gol).trim();
+      }
+    }
+
+    const formData = {
+      nip: raw.nip || src.NIP || '',
+      nama: (raw.nama || src['Nama Lengkap dengan Gelar'] || '').toUpperCase(),
+      noKarpeg: raw.no_karpeg || '',
+      tempatLahir: raw.tempat_lahir || '',
+      tanggalLahir: raw.tanggal_lahir || '',
+      pendidikan: raw.pendidikan || '',
+      jenisKelamin: raw.jenis_kelamin || '',
+      pangkat: pangkat,
+      golongan: golongan,
+      tmtPangkat: raw.tmt_pangkat || '',
+      jabatanJf: raw.jenis_jf || '',
+      tmtJf: raw.tmt_jf || '',
+      masaKerjaGol: raw.masa_kerja_gol || '',
+      unitKerja: raw.satuan_kerja || '',
+      instansi: raw.instansi || 'Dinas Kesehatan Kab. Kutai Kartanegara',
+      // Angka Kredit diisi 0 (dilengkapi admin kemudian)
+      akLamaPendidikan: 0,
+      akLamaTugasPokok: 0,
+      akLamaPengembangan: 0,
+      akLamaPenunjang: 0,
+      akBaruPendidikan: 0,
+      akBaruTugasPokok: 0,
+      akBaruPengembangan: 0,
+      akBaruPenunjang: 0,
+      akMinimalPangkat: 0,
+      akMinimalJenjang: 0,
+      akMinimalPengembangan: 0,
+      nilaiDasar: 0,
+      periodePenilaian: '',
+      tanggalPenetapan: '',
+      lokasiPenetapan: 'Tenggarong',
+      namaPejabat: '',
+      nipPejabat: '',
+      rekomendasi: '',
+    };
+
+    try {
+      await insertDataMaster(formData);
+      successCount++;
+      tarikPengajuanSelection.delete(String(formData.nip));
+    } catch (err) {
+      failCount++;
+      errors.push('NIP ' + (formData.nip || '-') + ': ' + (err.message || 'Unknown error'));
+      console.error('[Data Master] Import error:', err);
+    }
+  }
+
+  if (failCount === 0) {
+    toastSuccess('Import selesai! ' + successCount + ' data berhasil ditarik ke Data Master.');
+  } else {
+    toastWarning('Import selesai: ' + successCount + ' berhasil, ' + failCount + ' gagal.');
+    if (errors.length > 0) {
+      console.warn('[Data Master] Import errors:', errors);
+    }
+  }
+
+  // Refresh data master lalu tutup modal
+  await loadDataMaster();
+  closeTarikPengajuanModal();
 }

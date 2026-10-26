@@ -7,9 +7,12 @@
 -- Deskripsi:
 --   Menambahkan kolom baru `pak_integrasi_terbit` pada tabel
 --   `pengajuan_pak` untuk menyimpan LINK dokumen PAK Integrasi
---   yang sudah terbit (URL dari Supabase Storage atau storage
---   lainnya). Link diisi MANUAL oleh admin melalui Supabase
---   Dashboard (Table Editor), tidak melalui aplikasi.
+--   yang sudah terbit (URL dari Supabase Storage).
+--   Kolom diisi OTOMATIS oleh aplikasi melalui menu admin
+--   "Pembuatan PAK Integrasi" -> tombol "Upload Dokumen PAK Terbit"
+--   (file diupload ke Storage folder pak-integrasi/, lalu URL-nya
+--   dipasangkan ke baris pengajuan_pak sesuai NIP).
+--   Tetap dapat diisi manual via Supabase Dashboard bila perlu.
 --
 -- Sifat migration:
 --   - ADDITIVE ONLY: hanya menambah kolom baru.

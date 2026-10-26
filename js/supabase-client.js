@@ -342,7 +342,7 @@ async function adminEditPengajuan(id, fields) {
 /**
  * Upload file ke Supabase Storage
  * @param {File} file - File object
- * @param {string} folder - Sub-folder: 'foto' | 'sk_pangkat' | 'sk_jabfung' | 'pak_konvensional'
+ * @param {string} folder - Sub-folder: 'foto' | 'sk_pangkat' | 'sk_jabfung' | 'pak_konvensional' | 'pak_integrasi'
  * @param {string} nip - NIP sebagai identifier unik
  * @returns {Promise<string>} Public URL
  */
@@ -356,7 +356,7 @@ async function uploadDocument(file, folder, nip) {
   }
 
   // Validasi folder
-  const validFolders = ['foto', 'sk_pangkat', 'sk_jabfung', 'pak_konvensional'];
+  const validFolders = ['foto', 'sk_pangkat', 'sk_jabfung', 'pak_konvensional', 'pak_integrasi'];
   if (!validFolders.includes(folder)) {
     throw new Error('Folder tidak valid: ' + folder);
   }
@@ -436,6 +436,91 @@ async function deleteStorageFile(publicUrl) {
     console.warn('[Storage] Gagal hapus file:', e.message);
     return false;
   }
+}
+
+/* ============================================
+ * PAK INTEGRASI TERBIT
+ * ============================================
+ * Kolom pak_integrasi_terbit pada tabel pengajuan_pak menyimpan
+ * URL dokumen PAK Integrasi yang sudah terbit. Diisi otomatis oleh
+ * admin melalui menu Pembuatan PAK Integrasi (upload dokumen),
+ * dicocokkan berdasarkan NIP.
+ */
+
+/**
+ * Update kolom pak_integrasi_terbit pada tabel pengajuan_pak berdasarkan NIP
+ * Opsional: sekaligus set status pengajuan menjadi 'Terbit'
+ * @param {string} nip - NIP pegawai (di tabel pengajuan_pak)
+ * @param {string} url - Public URL dokumen dari Storage (null/'' untuk hapus)
+ * @param {boolean} setStatusTerbit - Set status = 'Terbit' sekaligus (default false)
+ * @returns {Promise<object>} { updated: number } jumlah baris yang ter-update
+ */
+async function updatePakIntegrasiTerbitByNip(nip, url, setStatusTerbit = false) {
+  if (!isSupabaseReady()) {
+    throw new Error('Supabase belum dikonfigurasi');
+  }
+
+  if (!nip) {
+    throw new Error('NIP wajib diisi');
+  }
+
+  const payload = {
+    pak_integrasi_terbit: url || null,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (setStatusTerbit) {
+    payload.status = 'Terbit';
+  }
+
+  const { data, error } = await supabaseClient
+    .from(TABLE_PENGAJUAN)
+    .update(payload)
+    .eq('nip', nip)
+    .select('id, nip, nama, status, pak_integrasi_terbit');
+
+  if (error) {
+    // Kolom belum ada? Jalankan migration_pak_integrasi_terbit.sql
+    if (error.code === 'PGRST204' || (error.message || '').includes('pak_integrasi_terbit')) {
+      throw new Error(
+        'Kolom pak_integrasi_terbit belum ada di database. ' +
+        'Jalankan supabase/migration_pak_integrasi_terbit.sql di SQL Editor Supabase.'
+      );
+    }
+    throw error;
+  }
+
+  return { updated: (data || []).length, rows: data || [] };
+}
+
+/**
+ * Ambil semua data pengajuan (untuk tabel monitoring PAK Integrasi Terbit)
+ * Hanya field yang relevan agar payload ringan
+ */
+async function fetchPengajuanTerbitStatus() {
+  if (!isSupabaseReady()) {
+    throw new Error('Supabase belum dikonfigurasi');
+  }
+
+  const { data, error } = await supabaseClient
+    .from(TABLE_PENGAJUAN)
+    .select('id, nip, nama, pangkat_gol, jenis_jf, satuan_kerja, status, pak_integrasi_terbit, updated_at')
+    .order('nama', { ascending: true });
+
+  if (error) {
+    // Fallback jika kolom pak_integrasi_terbit belum ada
+    if ((error.message || '').includes('pak_integrasi_terbit')) {
+      const { data: fallback, error: err2 } = await supabaseClient
+        .from(TABLE_PENGAJUAN)
+        .select('id, nip, nama, pangkat_gol, jenis_jf, satuan_kerja, status, updated_at')
+        .order('nama', { ascending: true });
+      if (err2) throw err2;
+      return (fallback || []).map((r) => ({ ...r, pak_integrasi_terbit: null }));
+    }
+    throw error;
+  }
+
+  return data || [];
 }
 
 /* ============================================

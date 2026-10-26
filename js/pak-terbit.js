@@ -115,11 +115,12 @@ function renderPakTerbitCard(data) {
   let documentsHTML = '';
 
   if (integrasiUrl) {
+    const docIcon = getDocIconForUrl(integrasiUrl);
     documentsHTML = `
       <div class="pak-doc-item pak-integrasi-doc">
         <div class="pak-doc-header">
           <div class="pak-doc-title">
-            <i class="fas fa-file-pdf"></i> Dokumen PAK Integrasi Terbit
+            <i class="fas ${docIcon}"></i> Dokumen PAK Integrasi Terbit
           </div>
           <div class="pak-doc-actions">
             <button class="btn-preview-pak" onclick="previewPAKIntegrasiDoc('${encodeURIComponent(integrasiUrl)}')">
@@ -217,13 +218,24 @@ function decodeDocUrlArg(encoded) {
 }
 
 /**
- * Deteksi tipe dokumen dari URL (pdf / image / other)
+ * Deteksi tipe dokumen dari URL (pdf / image / word / other)
  */
 function detectDocTypeFromUrl(url) {
   const lowerUrl = (url || '').toLowerCase().split('?')[0];
   if (/\.(jpg|jpeg|png|gif|webp|bmp)$/.test(lowerUrl)) return 'image';
   if (/\.pdf$/.test(lowerUrl)) return 'pdf';
+  if (/\.(docx?|odt)$/.test(lowerUrl)) return 'word';
   return 'other';
+}
+
+/**
+ * Icon FontAwesome sesuai tipe dokumen
+ */
+function getDocIconForUrl(url) {
+  const type = detectDocTypeFromUrl(url);
+  if (type === 'word') return 'fa-file-word';
+  if (type === 'image') return 'fa-file-image';
+  return 'fa-file-pdf';
 }
 
 /**
@@ -240,6 +252,14 @@ function previewPAKIntegrasiDoc(docUrl) {
   }
 
   const docType = detectDocTypeFromUrl(docUrl);
+
+  // Word/ODT tidak dapat dirender di iframe browser -> buka di tab baru
+  if (docType === 'word') {
+    toastInfo('Dokumen Word dibuka di tab baru. Gunakan tombol Download untuk menyimpan.');
+    window.open(docUrl, '_blank');
+    return;
+  }
+
   const modal = document.getElementById('pakDocPreviewModal');
   const titleEl = document.getElementById('pakDocPreviewTitle');
   const bodyEl = document.getElementById('pakDocPreviewBody');

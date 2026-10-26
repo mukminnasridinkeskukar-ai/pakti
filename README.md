@@ -81,9 +81,13 @@ Buka **Supabase Dashboard → SQL Editor** dan run 3 file SQL secara berurutan:
 > kolom baru `pak_integrasi_terbit` (TEXT) pada tabel `pengajuan_pak`, tanpa mengubah
 > kolom/data yang sudah ada.
 >
-> **Cara mengisi link dokumen:** upload PDF ke Supabase Storage → copy public URL →
-> Table Editor `pengajuan_pak` → paste ke kolom `pak_integrasi_terbit` pada baris NIP
-> yang sesuai. Link otomatis tampil di menu Cek PAK Terbit dengan tombol Preview & Download.
+> **Cara mengisi link dokumen (otomatis via aplikasi):** buka menu admin
+> **"Pembuatan PAK Integrasi"** → klik **"Upload Dokumen PAK Terbit"** → pilih pegawai →
+> upload file (PDF/DOC/DOCX/JPG/PNG). Link otomatis masuk ke kolom
+> `pak_integrasi_terbit` pada tabel `pengajuan_pak` (dicocokkan berdasarkan NIP),
+> langsung tampil di menu Cek PAK Terbit dengan tombol Preview & Download.
+> Monitor status terbit semua pegawai pada tabel **"Status Dokumen PAK Integrasi Terbit"**
+> di halaman yang sama.
 
 ### 3. Jalankan Aplikasi
 
@@ -233,7 +237,44 @@ Untuk form update perbaikan (cek status), edit juga array `satkerOptions` di `js
 
 ## 📋 Features
 
-### 🆕 Pembuatan PAK Integrasi (Generate PDF)
+### 🆕 Data Master — Isian Otomatis dari Data Pengajuan
+
+Semua isian form Data Master dapat diambil otomatis dari data pengajuan (tabel `pengajuan_pak`):
+
+1. Buka menu **"Data Master (Sheet DATA)"** → klik **"Tambah Data"** atau **Edit**
+2. Pada blok **"Ambil Otomatis dari Data Pengajuan"**, pilih data pengajuan (NIP - Nama)
+3. Seluruh isian perorangan terisi otomatis: NIP, Nama, Karpeg, TTL, Pendidikan,
+   Jenis Kelamin, Pangkat, Golongan (di-split dari `pangkat_gol`), TMT Pangkat,
+   Jabatan Fungsional, TMT JF, Masa Kerja, Satuan Kerja
+4. Lengkapi Angka Kredit (AK) secara manual → Simpan
+
+**Import massal:** klik tombol **"Tarik Data Pengajuan"** → pilih data pengajuan yang belum
+ada di Data Master → **Import**. Data perorangan langsung tersalin, AK diisi 0.
+
+### 🆕 Pembuatan PAK Integrasi — Upload Dokumen Terbit
+
+Dokumen PAK Integrasi yang sudah final dapat langsung diterbitkan dari aplikasi:
+
+1. Buka menu **"Pembuatan PAK Integrasi"** → klik **"Upload Dokumen PAK Terbit"**
+2. Pilih pegawai (dari Data Master) — aplikasi memeriksa NIP di tabel `pengajuan_pak`
+3. Upload dokumen (PDF / DOC / DOCX / JPG / PNG, maks 10MB)
+4. Klik **"Upload & Terbitkan"** → file masuk Storage (folder `pak-integrasi/`) dan
+   link-nya **otomatis** tersimpan di kolom `pak_integrasi_terbit` tabel `pengajuan_pak`
+   dicocokkan berdasarkan NIP (opsional: sekaligus set status menjadi "Terbit")
+5. Dokumen langsung tampil & dapat diunduh di menu publik **"Cek PAK Terbit"**
+
+**Monitoring:** tabel **"Status Dokumen PAK Integrasi Terbit"** menampilkan seluruh data
+pengajuan beserta status dokumennya (Preview / Download / Hapus / Upload per baris).
+
+### 🆕 Export Word A4 (4 Dokumen)
+
+Setelah klik **"Generate 4 Dokumen PAK"**, tombol **"Download Word (A4)"** tersedia:
+
+- File `.doc` (Word) ukuran halaman **A4 portrait** (21cm × 29.7cm, margin 2cm)
+- Times New Roman, sesuai template dokumen resmi PAK
+- Kop surat (logo ter-embed otomatis)
+- 4 halaman: Konvensional → Integrasi → Kebutuhan AK → PAK Integrasi
+- Dapat diedit langsung di Microsoft Word sebelum dicetak/diupload kembali
 
 Menu khusus admin untuk generate dokumen PAK Integrasi siap printout:
 

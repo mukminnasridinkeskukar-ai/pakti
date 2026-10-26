@@ -1262,11 +1262,15 @@
                 </h3>
                 <p style="color: var(--text-medium); font-size: 0.85rem; margin: 4px 0 0 0;">
                   Sumber data utama untuk Pembuatan PAK Integrasi. Tabel: <code>data_master</code>
+                  &bull; Isian form dapat diambil otomatis dari <code>pengajuan_pak</code> (data pengajuan).
                 </p>
               </div>
               <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                 <button class="btn btn-success btn-sm" onclick="openDataMasterModal(null)">
                   <i class="fas fa-plus"></i> Tambah Data
+                </button>
+                <button class="btn btn-info btn-sm" onclick="openTarikPengajuanModal()" style="background: #06b6d4; color: white;" title="Import data dari tabel pengajuan_pak (data pengajuan pegawai)">
+                  <i class="fas fa-download"></i> Tarik Data Pengajuan
                 </button>
                 <button class="btn btn-primary btn-sm" onclick="openDataMasterBulkUploadModal()">
                   <i class="fas fa-file-csv"></i> Upload Massal CSV
@@ -1315,6 +1319,8 @@
                     <th>No</th>
                     <th>Nama Lengkap</th>
                     <th>NIP</th>
+                    <th>Pangkat/Gol</th>
+                    <th>Jabatan JF</th>
                     <th>Satuan Kerja</th>
                     <th>Total AK</th>
                     <th>Aksi</th>
@@ -1489,13 +1495,25 @@
               <button class="btn btn-warning" id="pakEditBtn" onclick="openDocumentEditor(currentPAKData)" style="display: none; background: #f59e0b; color: white;">
                 <i class="fas fa-edit"></i> Edit Dokumen (Word-like)
               </button>
+              <button class="btn btn-secondary" id="pakWordBtn" onclick="downloadPAKWord()" style="display: none; background: #2b579a; color: white;" title="Unduh dokumen PAK Integrasi dalam format Word A4 (.doc)">
+                <i class="fas fa-file-word"></i> Download Word (A4)
+              </button>
               <button class="btn btn-success" id="pakPrintBtn" onclick="printPAKIntegrasi()" style="display: none;">
                 <i class="fas fa-print"></i> Print / Save as PDF (4 Halaman)
+              </button>
+              <button class="btn btn-primary" onclick="openPakUploadModal()" style="background: #16a34a; color: white;" title="Upload dokumen PAK Integrasi terbit — otomatis masuk ke kolom pak_integrasi_terbit (tabel pengajuan_pak) sesuai NIP">
+                <i class="fas fa-cloud-upload-alt"></i> Upload Dokumen PAK Terbit
               </button>
               <button class="btn btn-secondary" onclick="resetPAKForm()" style="background: #64748b; color: white;">
                 <i class="fas fa-redo"></i> Reset
               </button>
             </div>
+            <p style="margin: 10px 0 0 0; font-size: 0.78rem; color: var(--text-light);">
+              <i class="fas fa-cloud-upload-alt"></i> <strong>Upload Dokumen PAK Terbit:</strong> file yang diupload otomatis
+              tersimpan di Storage (folder <code>pak-integrasi/</code>) dan link-nya langsung masuk ke kolom
+              <code>pak_integrasi_terbit</code> pada tabel <code>pengajuan_pak</code> dicocokkan berdasarkan NIP —
+              langsung tampil di menu publik <strong>Cek PAK Terbit</strong>.
+            </p>
           </div>
 
           <!-- Preview PAK -->
@@ -1509,6 +1527,27 @@
               <p style="text-align: center; color: var(--text-light); padding: 40px;">
                 <i class="fas fa-file-alt" style="font-size: 48px; margin-bottom: 12px;"></i><br>
                 Pilih pegawai untuk generate 4 dokumen PAK Integrasi
+              </p>
+            </div>
+          </div>
+
+          <!-- Monitoring: Status Dokumen PAK Integrasi Terbit (pengajuan_pak) -->
+          <div class="filter-section" style="padding: 0; overflow: hidden;">
+            <div style="background: var(--primary-light); padding: 12px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+              <h3 style="color: var(--government-blue); margin: 0; display: flex; align-items: center; gap: 8px; font-size: 1rem;">
+                <i class="fas fa-cloud-upload-alt"></i> Status Dokumen PAK Integrasi Terbit
+                <span style="font-weight: normal; font-size: 0.75rem; color: var(--text-medium);">(kolom pak_integrasi_terbit — tabel pengajuan_pak)</span>
+              </h3>
+              <div style="display: flex; gap: 8px;">
+                <button class="btn btn-primary btn-sm" onclick="loadPakTerbitStatus()">
+                  <i class="fas fa-sync-alt"></i> Muat / Refresh Status
+                </button>
+              </div>
+            </div>
+            <div id="pakTerbitStatusWrap" style="padding: 0;">
+              <p style="text-align: center; color: var(--text-light); padding: 24px; font-size: 0.85rem;">
+                <i class="fas fa-table" style="font-size: 28px; margin-bottom: 8px;"></i><br>
+                Klik <strong>"Muat / Refresh Status"</strong> untuk melihat data pengajuan beserta dokumen PAK Integrasi yang sudah terbit.
               </p>
             </div>
           </div>
